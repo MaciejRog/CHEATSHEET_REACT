@@ -171,10 +171,34 @@ function InterakcjeState() {
 }
 
 function InterakcjeStateSnapshot() {
+  console.warn(`RENDER ${Math.random() * 100000}`);
+  const [number, setNumber] = useState(0);
   // wywołanie settera stanu nie ustawia tak naprawdę wartości -> tylko powoduje wywołanie RERENDERU (zachowuje się jak SNAPSHOT - MIGAWKA)
-  // USTAWIENIE STANU POWODUJE RERENDER
-
-  return <></>;
+  // którego wynik jest zależny od nowej wartości nadanej stanowi
+  // RENDEROWANIE - to 1) wywołanie funkcji komponentu
+  // 2) funkcji komponentu zwraca JSX (SNAPSHOT) w danym czasie
+  // 3) react aktualizuje UI aby pasowało do tego SNAPSHOTA
+  // po WYWOŁANIU funkcji STATE nie znika tylko żyje wewnątrz REACT przypisany do danej instancji komponentu
+  // UWAGA !! zniakają za to i tworzone są na nowo wszystkie zmienne i funkcje (event handlers, stałe, zmienne itp...)
+  // UWAGA funkcje mają zakres wartość STATE -> taki jaki był gdy były tworzone (Zapamiętują go [CLOUSERS w JS]) - nie aktualizuje się sam (dopiero gdy tworzona jest funkcja na nowo)
+  return (
+    <>
+      <p>NUMBER = {number}</p>
+      <button
+        onClick={() => {
+          // UWAGA!!! z uwagi na powyżej opisane życie stanu poza komponentem po kliknięciu wartość zmieni się z 0 -> 1
+          // bo wszystkie wywołania setterów są w ramach 1 snashotu (gdzie number = 0)
+          setNumber(number + 1); // ten się wywoła i number = 0, zwiększy to o 1 => 1
+          setNumber(number + 1); // UWAGA dla tego number też jest 0 !!! w tym SNASHOT jest number = 0 !!!   wynik => 1
+          setNumber(number + 1); // tutaj tak samo 0 + 1 => 1
+          // czyli każdy spowoduje przerenderowanie komponentu ustawiająć wartośc number na 1 !!!
+          // UWAGA to samo dla ASYNCHRONICZNOŚCI wartośc stanu jest brana ze SNASHOTA -> więc w setTimeout też by było 0 przekazane
+        }}
+      >
+        +3 (zwróci 1)
+      </button>
+    </>
+  );
 }
 
 // #################################
