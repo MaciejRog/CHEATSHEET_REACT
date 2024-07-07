@@ -130,7 +130,9 @@ function InterakcjeState() {
   // destrukturyzacja tablicy         const [element1, element2] = [1, () => {}]
   // wszystko od 'use' to HOOK (maja swoje jasne reguły) najważniejsza -> muszą być wywołane w głównym bloku {} funkcji komponentu
   const [stan, setStan] = useState(1); // tak jak tutaj ( a nigdy np: w zagnieżdżonym if(){}...) czyli w miejscu renderowania
-  setStan(2);
+  function handleClick() {
+    setStan(2); // uwaga nie można wywołać settera STANU na poziomie TOP komponentu -> powoduje to błąd INFINITY LOOP
+  }
   // to WYWOŁA RE_RENDERING
   // wartość zachowuje się pomiędzy RENDERAMI
 
@@ -141,9 +143,11 @@ function InterakcjeState() {
     //do pobierania z session storage itp...
     return 100;
   });
-  setInaczej((prevValue) => {
-    return prevValue + 1;
-  });
+  function handleClick2() {
+    setInaczej((prevValue) => {
+      return prevValue + 1;
+    });
+  }
 
   // UWAGA!!! bardzo ważna jest kolejność HOOKÓW w komonencie, React w ten sposób identyfikuje którą wartość ma zwrócić dla którego stanu !!!
   // dlatego nie jest dopuszczone warunkowe tworzenie hooków w 'if' 'function' itp...
@@ -153,7 +157,12 @@ function InterakcjeState() {
 
   return (
     <>
-      <p>
+      <p
+        onClick={() => {
+          handleClick();
+          handleClick2();
+        }}
+      >
         Zmienne = {zmienna} | stan {stan} | stan 2 = {inaczej}
       </p>
       <InterakcjeStateSnapshot />

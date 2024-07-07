@@ -162,7 +162,7 @@ function KomponentPropsPass2({ name = "", age = 0, data, children }) {
   // wartości inicjalne zostaną użyte gdy: 1) nie będzie pola np: name, 2) wartość będzie 'undefined' || nie działa dla null !
   return (
     <p>
-      {`IMIE = ${name} | WIEK = ${age} | WZROST = ${data?.height} | ZAWÓD = }`}
+      {`IMIE = ${name} | WIEK = ${age} | WZROST = ${data?.height} | ZAWÓD = `}
       {children} {/*  <span>SYN 2</span> */}
     </p>
   );
@@ -248,7 +248,7 @@ function KomponentRenderList() {
             </li>
           );
         })}
-      {lista.filter((el) => {
+      {lista.map((el) => {
         return (
           // jeśli trzeba zwrócić więcej niz 1 tag przy pomocy map, to opakujemy to we <Fragment>...</Fragment>, działa jak <>...</>
           // z tą różnicą, że pozwala na określenie atrybutu 'key'
