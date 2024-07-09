@@ -5,6 +5,7 @@ function Interakcje() {
     <div>
       <InterakcjeEventy />
       <InterakcjeState />
+      <InterakcjeStateObjects />
     </div>
   );
 }
@@ -191,23 +192,78 @@ function InterakcjeStateSnapshot() {
           setNumber(number + 1); // ten się wywoła i number = 0, zwiększy to o 1 => 1
           setNumber(number + 1); // UWAGA dla tego number też jest 0 !!! w tym SNASHOT jest number = 0 !!!   wynik => 1
           setNumber(number + 1); // tutaj tak samo 0 + 1 => 1
-          // czyli każdy spowoduje przerenderowanie komponentu ustawiająć wartośc number na 1 !!!
+          // W efekcie będzie 1 re-render ustawiający wartość na 1 (dlaczego 1? Opisane poniżej)
           // UWAGA to samo dla ASYNCHRONICZNOŚCI wartośc stanu jest brana ze SNASHOTA -> więc w setTimeout też by było 0 przekazane
         }}
       >
-        +3 (zwróci 1)
+        +3 (zwróci +1)
+      </button>
+      <InterakcjeStateSeriesOfUpdates />
+    </>
+  );
+}
+
+// #################################
+// #### 3) aktualizacja stanu poprzez funkcję (BATCHING + STATE UPDATER FUNCTIONS)
+// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function InterakcjeStateSeriesOfUpdates() {
+  // uzupełnienie do powyższej lekcji
+  // PARTIA AKTUALIZACJA (Batch of updates)
+  const [number, setNumber] = useState(0);
+  return (
+    <>
+      <p>NUMBER = {number}</p>
+      <button
+        onClick={() => {
+          // UWAGA !!! react CZEKA aż CAŁY kod z event-handlera się wykona zanim przeprowadzi UPDATE STANU
+          // to czekanie na wykonanie Całego kodu z event-handlera => BATCHING (PARTIOWANIA)[przyśpiesza reacta]
+          // każde event (nawet ten sam np: 'click') jest obsługiwany osobno
+          setNumber((prevNumber) => prevNumber + 1); // prev = 0, wynik = 1     // dodano do kolejki wywołań funkcji przed rerenderem
+          setNumber((prevNumber) => prevNumber + 1); // prev = 1, wynik = 2     // dodano do kolejki wywołań funkcji przed rerenderem
+          setNumber((prevNumber) => prevNumber + 1); // prev = 2, wynik = 3     // dodano do kolejki wywołań funkcji przed rerenderem
+          // DO SETTERÓW STANU można przekazać FUNKCJĘ (funkcja UPDATER) !!! [MUSI BYĆ PURE i ZWRACAĆ WARTOŚĆ]
+          // UWAGA!!! KONWENCJA nazwa argumentu dla FUNKCJI UPDATER
+          // 1) 1 litera nazwy stanu np: [stan = number (n => ...)],  [stan = age (a => ...)]
+          // 2) powtórzenie nazwy stanu np: [stan = number (number => ...)],  [stan = age (age => ...)]
+          // 3) prefeix 'prev' + nazwa stanu np: [stan = number (prevNumber => ...)],  [stan = age (prevAge => ...)]
+          // -) czasem używam po prostu 'prev' (nazwa settera mówi mi czego dotyczy)
+          // funkcja ta musi zwracać nową wartość stanu, BAZUJĄĆ na POPRZEDNIEJ WARTOŚCI w KOLEJCE !!!
+          // operujemy na faktycznej wartości STANU, a nie wartości stanu uzyskanej dla komponentu w ramach SNAPSHOTA
+        }}
+      >
+        +3 (zwróci +3)
+      </button>
+      <button
+        onClick={() => {
+          setNumber(number + 5); // dodane do kolejki | number = 0 => 0 + 5 = 5
+          setNumber((prevNumber) => prevNumber + 1); // dodane do kolejki | prev = 5 => 5 + 1 = 6
+          // wynik to 6
+        }}
+      >
+        ZMIANA 1
+      </button>
+      <button
+        onClick={() => {
+          setNumber((prevNumber) => prevNumber + 1); // dodane do kolejki | prev = 0 => 0 + 1 = 1
+          setNumber(number + 5); // dodane do kolejki | number = 0 => 0 + 5 = 5
+          // wynik to 5 (bo 'number + 5' nie operuje na wartości stanu, a wartości z snashota + ZASTEPUJE wartość stanu,
+          // a nie wylicza ją na bazie poprzedniej wartości)
+        }}
+      >
+        ZMIANA 2
       </button>
     </>
   );
 }
 
 // #################################
-// #### 3)
+// #### 4) Aktualizacja OBIEKTÓW STANU (STATE OBJECT UPDATE)
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
-// #################################
-// #### 4)
-// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+function InterakcjeStateObjects() {
+  return <></>;
+}
 
 // #################################
 // #### 5)
