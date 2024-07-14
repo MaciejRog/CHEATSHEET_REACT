@@ -262,7 +262,111 @@ function InterakcjeStateSeriesOfUpdates() {
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
 function InterakcjeStateObjects() {
-  return <></>;
+  // stan może przechowywać dowolną wartość JS'a => zwłaszcza OBIEKT
+  // UWAGA !! nie można zmieniać obiektu bezpośrednio, trzeba stworzyć nowy!!! (lub kopię istniejącego )
+
+  // zmienne IMMUTABLE  => 'string', 'number', 'booleans'
+  // zdefiniowane w systemie w pamięci przez JS'a (tylko 'read-only') => więc ich zmiana np: z 1 na 5 zmienia referencję do komórki w pamięci
+
+  // MUTACJA => mamy obiekt const [stan, setStan] = useState({x: 0, y: true})
+  // obiekt dostaje swoją referencję w pamięci
+  // możemy zrobić MUTACJĘ!!! (zmiana wartosci bez zmiany referencji)   np:  stan.x = 5 | stan.y = false
+  // UWAGA przy MUTACJI nie zmieni sie referencja do obiektu co przełoży się na brak 're-renderingu'
+  // UWAGA!!! to dotyczy tylko OBIEKTÓW które są STANEM (STATE OBJECT)
+
+  const [obiekt, setObiekt] = useState({
+    name: "AGA",
+    age: 30,
+  });
+  const [nestObiekt, setNestObiekt] = useState({
+    id: 1,
+    items: [
+      {
+        name: "kiwi",
+      },
+    ],
+  });
+
+  function handleClick() {
+    // aktualizując stan z obiektem musimy go traktować jako 'read-only'
+    // czyli zwrócić
+    // 1) nowy obiekt
+    // 2) kopię istniejącego
+
+    // ver_1
+    setObiekt({
+      // PŁYTKA KOPIA (SHALLOW-COPY) - zmienia tylko referencję 'obiekt', ALE nie zmieni referencję obiektów / tablic wewnątrz niego
+      ...obiekt,
+      name: "Nowa_wartosc",
+    });
+
+    // ver_2
+    setObiekt((prevObiekt) => {
+      return {
+        ...prevObiekt,
+        age: 29,
+      };
+    });
+
+    // ver_3
+    setObiekt(
+      // DEEP COPY - zmienia referencję obiektów i WSZYSTKICH obiektów / tablick itp.. w nim zagnieżdżonych (wszystko tworzone na nowa z nową referencję)
+      JSON.parse(
+        JSON.stringify({
+          ...obiekt,
+          name: "100% zmiana referencji wraz z zagnieżdżonymi referencjami",
+        })
+      )
+    );
+
+    // ver_4  (jak najbardziej poprawna)
+    const newObject = {
+      name: "MR",
+      age: 29,
+    };
+    newObject.name = "MARO"; // w nowo utworzonym obiekcie mozna zrobić mutację (zanim trafi do settera stanu) [LOCAL MUTATION są OK :)]
+    setObiekt(newObject);
+  }
+
+  function handleClickNestObject() {
+    // każdy zagnieżdżony obiekt należy też destrukturyzować ... (upierdliwe trochę)
+    // UWAGA !! tak na prawdę to nie ma zagnieżdżeń,
+    // po prostu pola wskazuja referencję na obiekt
+    /* WIĘC TAK NA PRAWDĘ WEWNĄTRZ DZIEJE SIĘ COŚ TAKIEGO:
+    let obj = {
+      name: 'ABC'
+      obj2: obj2      // referencja do obiektu
+    }
+    let obj2 = {
+      name: '123'
+    }
+    UWAGA !!!!
+        aby nie działać w ten sposób REACT zaleca stosowanie BIBLIOTEKI 'IMMER'  => npm i user-immer (i zamiast 'useState' => 'useImmer')
+        pozwala na zmiany typu: obj.pole = "nowa_wartośc" (które wewnątrz wykonują zmiany NIE MUTUJĄC OBIEKTU)
+    */
+    setNestObiekt((prevNestObiekt) => {
+      return {
+        ...prevNestObiekt,
+        items: [
+          // UWAGA 2-ga destruktyryzacja (aby zmienić referencję dla zagnieżdżonego obiektu !!!!!)
+          ...prevNestObiekt.items,
+          {
+            //dodano nowy obiekt do tablicy
+            name: "sage",
+          },
+        ],
+      };
+    });
+  }
+
+  return (
+    <>
+      <p onClick={handleClick}>
+        NAME = {obiekt.name} | WIEK = {obiekt.age}
+      </p>
+      <p onClick={handleClickNestObject}>Nest id = {nestObiekt.id}</p>
+    </>
+  );
 }
 
 // #################################
