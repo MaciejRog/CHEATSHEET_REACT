@@ -6,6 +6,7 @@ function Interakcje() {
       <InterakcjeEventy />
       <InterakcjeState />
       <InterakcjeStateObjects />
+      <InterakcjeStateArrays />
     </div>
   );
 }
@@ -370,8 +371,91 @@ function InterakcjeStateObjects() {
 }
 
 // #################################
-// #### 5)
+// #### 5) ARRAYS STATE (tablice jako stan)
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function InterakcjeStateArrays() {
+  // tablice w js są mutable, ale tak na prawdę są obiektami!!! i musimy je traktować jak obiekty (IMMUTABLE)
+  /*
+	                      avoid (mutates the array)	                prefer (returns a new array)[Z TYCH KORZYSTAĆ]
+  adding	                push, unshift	                              concat, [...arr] spread syntax 
+  removing	              pop, shift, splice	                        filter, slice 
+  replacing	              splice, arr[i] = ... assignment	            map
+  sorting	                reverse, sort	                              copy the array first
+
+  UWAGA!!! gdy używamy biblioteki Immer - można korzystać wtedy z 2 kolumn  [zamiast useState -> useImmer]
+        "immer": "1.7.3",             npm i immer
+        "use-immer": "0.5.1"          npm i use-immer
+  UWAGA!!! używamy 'SLICE' -> nowa tablica, a NIE  'splice' -> który mutuje obecną tablicę 
+                    [odkadWyciac, dokadWyciac]               [index, liczbaElDoUsunieciaOdIndex, ...elementy]
+  */
+
+  const [tablica, setTablica] = useState([1, 2, 3, 4]);
+
+  function handleClick() {
+    //#####################
+    // DODANIE ELEMENETU na koniec
+    setTablica([...tablica, 99]);
+    setTablica((prevTablica) => [...prevTablica, 99]);
+    //#####################
+    // DODANIE ELEMENETU na początek
+    setTablica([100, ...tablica]);
+    setTablica((prevTablica) => [100, ...prevTablica]);
+
+    //#####################
+    // USUWANIE ELEMENTU
+    setTablica((prevTablica) => {
+      return prevTablica.filter((el) => {
+        if (el > 2) {
+          return el;
+        }
+        return null;
+      });
+    });
+
+    //#####################
+    // MODYFIKACJA ELEMENTU (LUB jego ZMIANA)
+    setTablica((prevTablica) => {
+      return prevTablica.map((el) => {
+        if (el === 2) {
+          // UWAGA GDY MAMY TABLICĘ OBIEKTÓW to musimy obiekty desktrukturyzować
+          // return {...el, inneZmiany: true}
+          return el - 1;
+        }
+        return el;
+      });
+    });
+
+    //#####################
+    // WSTAWIANIE W DOWOLNE MIEJSCE
+    const indexToInsert = 2;
+    setTablica((prevTablica) => {
+      const before = prevTablica.slice(0, indexToInsert);
+      const after = prevTablica.slice(indexToInsert);
+      return [...before, 998, ...after];
+    });
+
+    //#####################
+    // SORTOWANIE i ODWRACANIE
+    setTablica((prevTablica) => {
+      const copy = [...prevTablica];
+      copy.sort(); // .reverse();
+      return copy;
+    });
+  }
+
+  return (
+    <>
+      {tablica.map((el) => {
+        return (
+          <span key={el} onClick={handleClick}>
+            {el}
+          </span>
+        );
+      })}
+    </>
+  );
+}
 
 // #################################
 // #### 6)
