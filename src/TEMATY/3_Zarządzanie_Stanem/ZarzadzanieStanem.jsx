@@ -1,8 +1,11 @@
+import { useState } from "react";
+
 function ZarzadzanieStanem() {
   return (
     <div>
       <ZarzadzanieStanemInput />
       <ZarzadzanieStanemStruktura />
+      <ZarzadzanieStanemWspoldzielenieStanu />
     </div>
   );
 }
@@ -67,8 +70,96 @@ function ZarzadzanieStanemStruktura() {
 }
 
 // #################################
-// #### 3)
+// #### 3) DZIELENIE STANU MIĘDZY KOMPONENTAMI
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ZarzadzanieStanemWspoldzielenieStanu() {
+  /*  
+  KOMPONENTY KONTROLOWANE -> są zależne od wartosci dostarczonych ich przez props (rodzic ma na nie wpływ)
+
+  KOMPONENTY NIEKTOROLOWANE -> posiadają stan lokalny (są nie zależne od danych z rodzica -> props na nie nie wpływają)
+
+  często w przrodzie występuje zmieszanie tych zależności
+  1 ŹRÓDŁO PRAWDY -> zawsze jest komponet, który posiada i zarządza stan, który odziałuje na inne komponenty
+
+  */
+  // aby 2 komponenty współdzieliły stan należy go przenieść do ich najbliższego wspólnego potomka i przekazać jako prop
+  // zapieg ten to 'LIFTING STATE UP' - podnoszenie stanu w górę
+  const [stan, setStan] = useState(0);
+  return (
+    <>
+      {/* ten chce mieć dostęp do stanu */}
+      <ZarzadzanieStanemWspoldzielenieStanuChild1
+        stan={stan}
+        setStan={setStan}
+      />
+      {/* ten nie chce, ale jego dziecko 'ZarzadzanieStanemWspoldzielenieStanuChild3' już tak więc też go przekazujemy
+        aby wykonać tzw... prop drilling [przekazanie stanu/props dalej przez komponent, który ich nie potrzebuje ]
+      */}
+      <ZarzadzanieStanemWspoldzielenieStanuChild2
+        stan={stan}
+        setStan={setStan}
+      />
+      {/* 
+        Aby obejść prop-drilling można wykorzystać mechanizm 'props.children'
+      */}
+      <ZarzadzanieStanemWspoldzielenieStanuChild4>
+        <ZarzadzanieStanemWspoldzielenieStanuChild5
+          stan={stan}
+          setStan={setStan}
+        />
+      </ZarzadzanieStanemWspoldzielenieStanuChild4>
+    </>
+  );
+}
+
+function ZarzadzanieStanemWspoldzielenieStanuChild1({ stan, setStan }) {
+  return (
+    <span
+      onClick={() => {
+        setStan(1);
+      }}
+    >
+      DZIECKO 1 {stan}
+    </span>
+  );
+}
+
+function ZarzadzanieStanemWspoldzielenieStanuChild2(props) {
+  return (
+    <>
+      <ZarzadzanieStanemWspoldzielenieStanuChild3 {...props} />
+    </>
+  );
+}
+
+function ZarzadzanieStanemWspoldzielenieStanuChild3({ stan, setStan }) {
+  return (
+    <span
+      onClick={() => {
+        setStan(3);
+      }}
+    >
+      DZIECKO 3 {stan}
+    </span>
+  );
+}
+
+function ZarzadzanieStanemWspoldzielenieStanuChild4({ children }) {
+  return <>{children}</>;
+}
+
+function ZarzadzanieStanemWspoldzielenieStanuChild5({ stan, setStan }) {
+  return (
+    <span
+      onClick={() => {
+        setStan(5);
+      }}
+    >
+      DZIECKO 5 {stan}
+    </span>
+  );
+}
 
 // #################################
 // #### 4)
