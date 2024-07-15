@@ -6,6 +6,7 @@ function ZarzadzanieStanem() {
       <ZarzadzanieStanemInput />
       <ZarzadzanieStanemStruktura />
       <ZarzadzanieStanemWspoldzielenieStanu />
+      <ZarzadzanieStanemZachowywanieIResetowanie />
     </div>
   );
 }
@@ -162,8 +163,65 @@ function ZarzadzanieStanemWspoldzielenieStanuChild5({ stan, setStan }) {
 }
 
 // #################################
-// #### 4)
+// #### 4) PRZECHOWYWANIE i RESETOWANIE STANU
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ZarzadzanieStanemZachowywanieIResetowanie() {
+  /*
+  PRZECHOWYWANIE STANU MIĘDZY RERENDERAMI
+  #####
+
+  Stan jest izolowany między komponentami -> 2 instancje komponentu mogą mieć różne wartości tego samego stanu
+  REACT wie o tym który stan należy do którego komponentu poprzez jego pozycje w DRZEWIE UI (UI TREE)
+
+  stan jest trzymany wewnątrz reacta i jest dostarczany na podstawie zależności do danego komponentu
+  REACT trzyma stan komponentu tak długo jak jest w DRZEWIE UI na tym samym miejscu 
+    - przy znieknięciu (usunięciu) z drzewa (STAN JEST NISZCZONY - wraz ze stanami dzieci (PODRZEWO))
+    - dodaniu do drzewa (STAN JEST DODAWANY OD ZERA - wraz ze stanami dzieci (PODRZEWO))
+    - zmianie pozycji w drzewie  (STAN JEST NISZCZONY I DODAWANY OD ZERA dla danej pozycji - wraz ze stanami dzieci (PODRZEWO))
+    - czyli wyrenderowanie TEGO SAMEGO KOMPONENTU (z innymi PROPS) W TYM SAMYM MIEJSCU (zachowa ustawiony STAN i nie zmienione PROPSY)
+
+  WIĘC LICZY SIĘ UMIEJSCOWIENIE w DRZEWIE UI, (uwaga nie musi być tożsame z pozycją w JSX, choć w 99% jest - kolejność elementów i zagnieżdzeń)
+        <div> -> renderuje najpier <p> potem <span> (a nie na odwrót to się liczy) 
+        [ABY ZACHOWAĆ STAN między RERENDERS STRUKTURA MUSI BYĆ NIE_ZMIENIONA ]
+        jeżeli zamiast <p> będzie nagle <section> to wykonają się te mechanizmy usunięcie i dodania 
+
+
+  UWAGA !!! Nigdy nie definiować komponentów w sobie -> za każdym razem tworzy nową funckję komponentu, przez co w tym samym miejscu UI TREE
+            jest renderowany inny NOWY komponent, nawet mimo iż zwraca identyczne tagi to i tak STAN będzie zresetowany
+            function K1(){
+
+              function K2(){      // !!!! NIGDY TAK NIE ROBIĆ 
+                return <>
+                  <p>K2</>
+                </>
+              }
+
+              return <>
+                <p>K1</>
+                <K2 />
+              </>
+            }
+
+  
+  RESETOWANIE STANU MIĘDZY RERENDERAMI
+  #####
+  1) zmiana pozycji komponentu w DRZEWIE UI
+    np: zamiast {warunek ? <Komp atr="A"/> : <Komp atr="B"/> }
+    to: =>      {warunekA && <Komp atr="A"/>}{warunekB && <Komp atr="B"/> }   // zwracają 'null' gdy nie spełnione co zmienia DRZEWO UI
+  2) zmiana atrybutu 'key' komponentu
+    Domyslnie REACT używa kolejności wystąpienie dzieci w rodzicu aby nadać 'KLUCZE POZYCJI' dla komponentów (1,2,3, ...)
+    Ale atrybut 'key' pozwala nam samego nadać wartośc dla tego 'KLUCZA'
+    UWAGA !!! key (NIE JEST GLOBALNE), jest LOKALNE dla każdego RODZICA z osobna 
+            // -> więc mozna mieć taką samą wartość key w róznych komponentach
+
+    jeżeli KEY -> nie zmieni się między rerenderami to komponent też nie
+    jeśli się zmieni -> to komponent jest traktowany jak nowy i stary jest niszczony co resetuje STAN
+                {warunek ? <Komp key="A" atr="A"/> : <Komp key="B" atr="B"/> }
+
+  */
+  return <></>;
+}
 
 // #################################
 // #### 5)
