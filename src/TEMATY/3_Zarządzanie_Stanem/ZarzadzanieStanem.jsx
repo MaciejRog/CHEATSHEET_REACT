@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useReducer, useState } from "react";
 
 function ZarzadzanieStanem() {
   return (
@@ -7,6 +7,7 @@ function ZarzadzanieStanem() {
       <ZarzadzanieStanemStruktura />
       <ZarzadzanieStanemWspoldzielenieStanu />
       <ZarzadzanieStanemZachowywanieIResetowanie />
+      <ZarzadzanieStanemReducer />
     </div>
   );
 }
@@ -224,8 +225,103 @@ function ZarzadzanieStanemZachowywanieIResetowanie() {
 }
 
 // #################################
-// #### 5)
+// #### 5) REDUCER -> zaawansowane zarządzanie stanem
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+const initValues = {
+  name: "ABC",
+  age: 19,
+};
+
+// Lubię TYPY AKCJI zdefiniować jako 'enum'
+const ACTIONS = {
+  SET_NAME: "SET_NAME",
+  SET_AGE: "SET_AGE",
+};
+
+// funkcja do zarządzania stanem
+// przyjmuje state => poprzednia wartość stanu
+//          action => obecna akcja (type, payload)
+function reducer(state, action) {
+  // bazujemy na wyżej zdefiniowanych akcjach (a dokładniej ich typach)
+  // UWAGA! Wszystkie operacje muszą byc 'PURE' -> nie zawierać SIDE_EFFECTÓW (fetchy, timerów, operacji na DOM itp...)
+  switch (
+    action.type // <-- można używać if/else (ale konwencją jest 'switch')
+  ) {
+    case ACTIONS.SET_NAME:
+      // Reducer musi zwrócić NOWY obiekt, tablice (nie wolno nam ich MUTOWAĆ !!!!)
+      return {
+        ...state,
+        // Akcje mogą przekazywać (PAYLOAD - ŁADUNEK), ale nie jest to WYMAGANE
+        name: action.payload,
+      };
+    case ACTIONS.SET_AGE:
+      return {
+        ...state,
+        age: action.payload,
+      };
+    // jeśli typ akcji jest nieznany do obsługujemy go tutaj
+    default:
+      console.error("Unknown action");
+      // throw new Error("Unknown action");   <-- konwencją jest zwracanie błędu przy nieznanej akcji
+      return state;
+  }
+}
+
+function ZarzadzanieStanemReducer() {
+  // useReducer - tworzy stan (tak samo jak 'useState')
+  // ZMIANA stanu -> wywołuje RERENDER
+  // POZWALA NA WYODRĘBIENIE LOGI ZARZĄDZANIA SKOMPLIKOWANYM STANEM w 1 MIEJSCE (bardzo użyteczne)
+  /*    stan -> wartość stanu
+        dispatch -> funkcja do wywołania AKCJI (ACTION), która zmieni wartość stanu [IMMUTABLE - niezmienna, 1 i ta sama instancja / referencja]
+        reducer -> funkcja do zarządzania stanem  (najlepiej deklarować poza komponentem -> dbamy o PURE KOMPONENT)
+        initValues -> wartość początkowa dla naszego STANU (najlepiej deklarować poza komponentem -> dbamy o PURE KOMPONENT)
+  */
+  // useReducer -> nie może MUTOWAĆ stanu (należy zwracać kopier)
+  // możemy użyć bibliteki 'Immer' oraz 'useImmerReducer' -> by mutować stan (wewnętrznie odbędą się nie mutujące zmiany)
+  const [stan, dispatch] = useReducer(reducer, initValues);
+
+  function handleClickAgeChange() {
+    /*  
+    DISPATCHOWANIE -> AKTUALIZOWANIE WARTOŚCI STANU
+    DISPATCHUJĄC AKCJĘ musimy ją przekazać 
+    AKCJA to obiekt JS, o strukturze 
+        type => Unikalna nazwa rodzaj akcji 
+        payload => (OPCJONALNY, może nie byc wymagany) wartość którą przekażemy do rodzaju akcji [proste wartości oraz struktury np: obiekt]
+                  [nazwa 'payload' to konwencja z REDUXA, pola w AKCJI MOGĄ NAZYWAĆ SIĘ JAK CHCEMY i być ich tyle ile chcemy]
+    */
+    dispatch({
+      type: ACTIONS.SET_AGE,
+      payload: 29,
+    });
+  }
+
+  function handleClickNameChange() {
+    dispatch({
+      type: ACTIONS.SET_NAME,
+      payload: "Aga",
+    });
+  }
+
+  return (
+    <>
+      <span onClick={handleClickAgeChange}>AGE = {stan.age}</span>
+      <span onClick={handleClickNameChange}>NAME = {stan.name}</span>
+    </>
+  );
+
+  /*  
+  #########
+  ##        useReducer            vs           useState
+      sporo kodu do napisania               MAŁO KODU DO NAPISANIA (!)
+      czytelna logika zmian (!)             przy wielu stanach logika jest mało czytelna
+      łatwy do debugowania (!)              przy skomplikowanych updatach trudny do debugowania
+      łatwy do testowania (!)               ///
+    
+  Ale i tak wszystko zależy od preferencji (przy małych stanach zdecydowania useState, przy dużych zdecydowanie useReducer)
+  najlepiej je mieszać zależnie od potrzeb :)
+  */
+}
 
 // #################################
 // #### 6)
