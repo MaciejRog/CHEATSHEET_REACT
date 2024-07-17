@@ -1,4 +1,4 @@
-import { useReducer, useState } from "react";
+import { createContext, useContext, useReducer, useState } from "react";
 
 function ZarzadzanieStanem() {
   return (
@@ -8,6 +8,8 @@ function ZarzadzanieStanem() {
       <ZarzadzanieStanemWspoldzielenieStanu />
       <ZarzadzanieStanemZachowywanieIResetowanie />
       <ZarzadzanieStanemReducer />
+      <ZarzadzanieStanemContext />
+      <ZarzadzanieStanemSkalowanie />
     </div>
   );
 }
@@ -324,9 +326,187 @@ function ZarzadzanieStanemReducer() {
 }
 
 // #################################
-// #### 6)
+// #### 6) CONTEXT (przekazywanie danych w głąb) - PROP DRILLING SALVATION
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
+/*
+  UWAGA - czytelniejsze jest przekazywanie props
+  WIĘC zawsze zaczynajmy od PROPS -> potem przechodźmy na CONTEXT (łatwiejszy kod w utrzymaniu)
+
+  ZALECANE STOSOWANIE:
+    - THEME (kolory w apcje np: dark mode | light mode) [Provider opakowujący App Component]
+    - zalogowany USER [tutaj lepszy redux]
+    - routing
+    - SKOMPLIKOWANY STAN [odpowiednik REDUXA]
+*/
+
+// tworzenie kontekstu (może przyjąć dowolną wartość -> i tak zostanie nadpisana)
+const TestContext = createContext("Ala ma Kota");
+
+function ZarzadzanieStanemContext() {
+  /*
+  KONTEXT (CONTEXT) => mechanizm, który pozwala na dostęp do DANYCH (stanu) do dowolnie zagnieżdzonego komponentu (childs i ich childs itd...)
+                       BEZ KONIECZNOŚCI PRZEKAZYWANIA ICH poprzez PROPS!!!!
+                       ELIMINUJE PROP DRILLING problem (czyli problem z przekazywaniem props do komponentu, który ich nie potrzebuje
+                       tylko po to by przekazać je dalej do swoich dzieci lub wnuków lub głębiej, które go potrzebują)
+  */
+  return (
+    // Aby zarządzać wartościami kontekstu musimy opakować komponenty, które mają z niego korzystać w 'Provider' -> NazwaContext.Provider
+    // oraz przekazać wartośc (Wartość jest dowolna, może być obiektem z np: STANEM z useState, SETTEREM STANU)
+    //  UWAGA - Provider'y mogą być zagnieżdżone w sobie i zmieniać wartośc kontekstu do odczytu
+    //          'useContext' odczyta wartośc z najbliższego Providera
+    <TestContext.Provider value="Jednak to Aga ma psa">
+      <ZarzadzanieStanemContextChild />
+      <ZarzadzanieStanemContextZagniezdzenie />
+    </TestContext.Provider>
+  );
+}
+
+function ZarzadzanieStanemContextChild() {
+  // czytamy z kontekstu poprzez HOOK 'useContext' podając NazwęContextu
+  // zmiana tej wartości spowoduje RERENDER!!
+  const test = useContext(TestContext);
+  return <p>Kontekst value = {test}</p>;
+}
+
+/*
+SUPER MECHANIZM DLA ZAGNIEZDZEŃ !!!
+*/
+
+const TestContext2 = createContext(1);
+
+function ZarzadzanieStanemContextZagniezdzenie() {
+  return (
+    <TestContext2.Provider value={1}>
+      <ZarzadzanieStanemContextZagniezdzenieChild>
+        <ZarzadzanieStanemContextZagniezdzenieChild>
+          <ZarzadzanieStanemContextZagniezdzenieChild />
+        </ZarzadzanieStanemContextZagniezdzenieChild>
+      </ZarzadzanieStanemContextZagniezdzenieChild>
+    </TestContext2.Provider>
+  );
+}
+//                                            UWAGA !!! co ciekawe mechanizm {children} pozwala walczyć z PROP DILLINGIEM
+//                                            zapobiega przerenderowaniu tego komponentu gdy props się zmienią
+//                                            przerenedowuje natomiast ten komponent z 'children' który otrzumuje props i tylko jego !! :)
+function ZarzadzanieStanemContextZagniezdzenieChild({ children }) {
+  // odczytujemy obecny poziom Zagnieżdżenia
+  const level = useContext(TestContext2);
+  return (
+    <div>
+      <p
+        style={{
+          // coraz głębiej zagnieżdzony 'p' będzie przechodził z kolor 'CZARNEGO' na "BIAŁY"
+          color: `rgb(${(255 * level) / 4}, ${(255 * level) / 4} ,${
+            (255 * level) / 4
+          } )`,
+        }}
+      >
+        POZIOM {level}
+      </p>
+      {/* Dla zagnieżdżonych komponentów przekazujemy powiększony o 1 poziom zagnieżdżenia */}
+      <TestContext2.Provider value={level + 1}>
+        {children}
+      </TestContext2.Provider>
+    </div>
+  );
+}
+
 // #################################
-// #### 7)
+// #### 7) SKALOWANIE przy POMOCY 'REDUCER' i 'CONTEXT'
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+/*
+Połączenie technik opisanych powyżej w SUPER WYGODNY mechanizm zarządzania SKOMPLIKOWANYM STANEM 
+ 
+*/
+
+// wartość bazowa dla contextu oraz stanu zwróconego przez REDUCERA
+const initSkalowanieContextValue = { imie: "Aga" };
+// CONTEXT, który będziemy wykorzystywać - z domyślna wartości tego co wyżej
+const SkalowanieContext = createContext(initSkalowanieContextValue);
+// UWAGA!!! NOWOŚĆ - tworzymy CUSTOM HOOK (własny hook)
+// nazwa musi być od 'use' np: 'useMojaFunkcja' 'useMojHook' 'useNumber' itp...
+// bardzo podobne do KOMPONENTU z 1 różnicą NIE ZWRACAMY JSX, a jakiś STAN np: number, Object itp...
+const useSkalowanieContext = () => {
+  const wartosc = useContext(SkalowanieContext);
+  if (wartosc === undefined) {
+    throw new Error("use Skalowanie context | Unknown value");
+  }
+  return wartosc;
+};
+// Akcje dla Reducera
+const SKALOWANIE_CONTEXT_ACTIONS = {
+  SET_IMIE: "SET_IMIE",
+  RESET: "RESET",
+};
+// Reducer do obsługi Akcji
+function skalowanieReducer(state, action) {
+  switch (action.type) {
+    case SKALOWANIE_CONTEXT_ACTIONS.SET_IMIE:
+      return {
+        ...state,
+        imie: action.payload,
+      };
+    case SKALOWANIE_CONTEXT_ACTIONS.RESET:
+      return {
+        ...initSkalowanieContextValue,
+      };
+    default:
+      throw new Error("Skalowanie context | Unknown action");
+  }
+}
+// NOWOŚĆ -> komponent dostarczający Providera oraz zapewniający wartość na podstawie REDUCERA
+function ZarzadzanieStanemSkalowanieContextProvider({ children }) {
+  // pobieramy wartość, którą przekażemy do contextu oraz funkcję do zmiany tej wartości na podstawie AKCJI
+  const [state, dispatch] = useReducer(
+    skalowanieReducer,
+    initSkalowanieContextValue
+  );
+  return (
+    <SkalowanieContext.Provider
+      // jako wartośc dla kontekstu przekazałem OBIKET { STAN, funkcjaDoZmianyStanu}
+      // UWAGA !!! Można rozdzielić ten 1 kontekst na 2 CONTEXTY (1 z wartością , 2 z funkcją zmienijącą -- to będzie jeszcze lepsze)
+      value={{
+        stan: state,
+        dispatch,
+      }}
+    >
+      {children}
+    </SkalowanieContext.Provider>
+  );
+}
+
+function ZarzadzanieStanemSkalowanie() {
+  return (
+    // Zastosowanie powyższych komponentów
+    <ZarzadzanieStanemSkalowanieContextProvider>
+      <ZarzadzanieStanemSkalowanieChild />
+    </ZarzadzanieStanemSkalowanieContextProvider>
+  );
+}
+
+function ZarzadzanieStanemSkalowanieChild() {
+  // wykorzystanie CUSTOM HOOKA - zwróci to co przekazaliśmy w 'ZarzadzanieStanemSkalowanieContextProvider'
+  // czyli OBIEKT => const {stan, dispatch} = useSkalowanieContext();
+  const skalowanieContext = useSkalowanieContext();
+  function handleClick() {
+    if (skalowanieContext?.stan?.imie === "Aga") {
+      // Możemy zmienić wartość KONTEKSTU poprzez dispatch
+      skalowanieContext.dispatch({
+        type: SKALOWANIE_CONTEXT_ACTIONS.SET_IMIE,
+        payload: "Maciek",
+      });
+    } else {
+      skalowanieContext.dispatch({
+        type: SKALOWANIE_CONTEXT_ACTIONS.RESET,
+      });
+    }
+  }
+  return (
+    <>
+      {/*                             odczytanie wartości z kontekstu */}
+      <button onClick={handleClick}>{skalowanieContext?.stan?.imie}</button>
+    </>
+  );
+}
