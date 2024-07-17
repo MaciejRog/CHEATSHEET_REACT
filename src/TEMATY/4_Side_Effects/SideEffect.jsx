@@ -1,9 +1,9 @@
 function SideEffect() {
-  return (
-    <div>
-      <SideEffectRefs />
-    </div>
-  );
+    return (
+        <div>
+            <SideEffectRefs />
+        </div>
+    );
 }
 
 export default SideEffect;
@@ -13,7 +13,8 @@ export default SideEffect;
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
 function SideEffectRefs() {
-  return <></>;
+    //test
+    return <></>;
 }
 
 // #################################
