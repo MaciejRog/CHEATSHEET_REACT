@@ -69,6 +69,15 @@ function ZarzadzanieStanemStruktura() {
     - cięzko sychnronizować duplikaty więc lepiej ich nie mieć
   5) UNIKAJ BARDZO ZAGNIEŻDŻONYCH STRUKTUR DANYCH
     - bardzo ciężki update (najlepsze są płaskie stuktury)
+
+
+  UWAGA !!! 
+    'flushSync' => wymuszenie aktualizacji DOM przy rerenderze w sposób synchroniczny!!!!
+
+    flushSync(() => {
+      setStan(...)
+    })
+    //...np: operacje na DOM poprzed REF
   */
   return <></>;
 }
