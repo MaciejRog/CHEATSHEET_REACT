@@ -1,19 +1,19 @@
 import {
-    forwardRef,
-    useEffect,
-    useImperativeHandle,
-    useRef,
-    useState,
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
 } from "react";
 
 function SideEffect() {
-    return (
-        <div>
-            <SideEffectRefs />
-            <SideEffectEffect />
-            <SideEffectEffectNotNeeded />
-        </div>
-    );
+  return (
+    <div>
+      <SideEffectRefs />
+      <SideEffectEffect />
+      <SideEffectEffectNotNeeded />
+    </div>
+  );
 }
 
 export default SideEffect;
@@ -25,7 +25,7 @@ export default SideEffect;
 const refArrayLi = [1, 2, 3];
 
 function SideEffectRefs() {
-    /*
+  /*
                                                   REF         vs      STATE
   przechowuje między re-renderami                 tak                 tak
   zmiana wartości powoduje re-render              NIE                 tak
@@ -47,109 +47,109 @@ function SideEffectRefs() {
     }
   */
 
-    // Tworzenie referencji poprzez HOOK 'useRef' i wartość inicjalna tutaj null
-    const timeRef = useRef(null);
-    const domRef = useRef(null); // UWAGA!!! Bardzo uważać na DOM ->
-    //                                        najelepiej NIGDY NIE 'USUWAĆ', "PRZEMIESZCZAC", 'DODAWAC" elementów, którymi zarządza JSX
-    //                                        jeśli JSX zwraca np: zawsze pusty <div></div> to w nim coś można podziałać, ale po za NIE
-    const domListRef = useRef(null); // Ref do obsłużenie DYNAMICZNEJ listy referencji do DOM
-    const componentRef = useRef(null);
-    const ograniczeniaRef = useRef(null);
+  // Tworzenie referencji poprzez HOOK 'useRef' i wartość inicjalna tutaj null
+  const timeRef = useRef(null);
+  const domRef = useRef(null); // UWAGA!!! Bardzo uważać na DOM ->
+  //                                        najelepiej NIGDY NIE 'USUWAĆ', "PRZEMIESZCZAC", 'DODAWAC" elementów, którymi zarządza JSX
+  //                                        jeśli JSX zwraca np: zawsze pusty <div></div> to w nim coś można podziałać, ale po za NIE
+  const domListRef = useRef(null); // Ref do obsłużenie DYNAMICZNEJ listy referencji do DOM
+  const componentRef = useRef(null);
+  const ograniczeniaRef = useRef(null);
 
-    // UWAGA TO BĘDZIE opisane później (póki co wiecmy, że pozwala na zarządzanie cyklem życia komponentu i SIDE-EFFECTAMI)
-    useEffect(() => {
-        return () => {
-            // UWAGA!!! przy pracy z 'timeout' i 'interval' zawsze zwracać ich czyszczenie (na chwilę przed zniszczeniem komponentu)
-            clearTimeout(timeRef.current);
-        };
-    }, []);
+  // UWAGA TO BĘDZIE opisane później (póki co wiecmy, że pozwala na zarządzanie cyklem życia komponentu i SIDE-EFFECTAMI)
+  useEffect(() => {
+    return () => {
+      // UWAGA!!! przy pracy z 'timeout' i 'interval' zawsze zwracać ich czyszczenie (na chwilę przed zniszczeniem komponentu)
+      clearTimeout(timeRef.current);
+    };
+  }, []);
 
-    // funkcja pomocnicza do obsługi DYNAMICZNEJ listy referencji do DOM
-    function getDomList() {
-        if (!domListRef.current) {
-            // Zamiast przechowywać referencję do DOM będziemy mieć mapę, która będzie posiadała budowę 'klucz' => referencje do DOm
-            domListRef.current = new Map();
-        }
-        return domListRef.current;
+  // funkcja pomocnicza do obsługi DYNAMICZNEJ listy referencji do DOM
+  function getDomList() {
+    if (!domListRef.current) {
+      // Zamiast przechowywać referencję do DOM będziemy mieć mapę, która będzie posiadała budowę 'klucz' => referencje do DOm
+      domListRef.current = new Map();
     }
+    return domListRef.current;
+  }
 
-    function handleClickBtn() {
-        // dostęp do danych przechowywanych wewnątrz REF jest poprzez 'ref.current'
-        // MOŻNA ustawić to na DOWOLNĄ WARTOŚĆ jaką chcemy (możemy ją nadpisywać JEST MUTABLE)
-        // UWAGA - nie ustawiać i nie czytać wartości 'ref.current' w głównym nurcie renderowania (traktować jak side-effecty)
-        timeRef.current = setTimeout(() => {
-            console.warn("TIMEOUT POLECIAŁ");
-            clearTimeout(timeRef.current);
-        }, 1000);
+  function handleClickBtn() {
+    // dostęp do danych przechowywanych wewnątrz REF jest poprzez 'ref.current'
+    // MOŻNA ustawić to na DOWOLNĄ WARTOŚĆ jaką chcemy (możemy ją nadpisywać JEST MUTABLE)
+    // UWAGA - nie ustawiać i nie czytać wartości 'ref.current' w głównym nurcie renderowania (traktować jak side-effecty)
+    timeRef.current = setTimeout(() => {
+      console.warn("TIMEOUT POLECIAŁ");
+      clearTimeout(timeRef.current);
+    }, 1000);
+  }
+
+  function handleClickSpan() {
+    // jeśli nie ma takiego obiektu w DOM (np: zostanie usunięty) to będzie 'null'
+    if (domRef.current) {
+      // w przypadku REF do DOM, mamy obiekt, którym możemy sterować tak jak w przypadku 'document.querySelector'
+      domRef.current.innerText = "Nowy Text";
     }
+  }
 
-    function handleClickSpan() {
-        // jeśli nie ma takiego obiektu w DOM (np: zostanie usunięty) to będzie 'null'
-        if (domRef.current) {
-            // w przypadku REF do DOM, mamy obiekt, którym możemy sterować tak jak w przypadku 'document.querySelector'
-            domRef.current.innerText = "Nowy Text";
-        }
-    }
-
-    return (
-        <>
-            <button onClick={handleClickBtn}>Ustaw Timeout</button>
-            {/* Aby przekazać REF do DOM -> musimy nadać ATRYBUT 'ref' dla elemenetu HTML */}
-            <span ref={domRef} onClick={handleClickSpan}>
-                ABC
-            </span>
-            <ul
-                onClick={() => {
-                    console.log("MAP REF LIST REF = ", domListRef.current);
-                }}
+  return (
+    <>
+      <button onClick={handleClickBtn}>Ustaw Timeout</button>
+      {/* Aby przekazać REF do DOM -> musimy nadać ATRYBUT 'ref' dla elemenetu HTML */}
+      <span ref={domRef} onClick={handleClickSpan}>
+        ABC
+      </span>
+      <ul
+        onClick={() => {
+          console.log("MAP REF LIST REF = ", domListRef.current);
+        }}
+      >
+        {refArrayLi.map((el) => {
+          return (
+            //           uwaga do ref możemy też przekazać funkcję, która przyjmuje jako argument (node) - referencje do DOM obiektu
+            //           takie funkcje nazywają się 'callback'
+            <li
+              key={el}
+              ref={(node) => {
+                const map = getDomList();
+                if (node) {
+                  // dla danego 'key' posiadamy 'referencję' :)
+                  map.set(el, node);
+                } else {
+                  map.delete(el);
+                }
+              }}
             >
-                {refArrayLi.map((el) => {
-                    return (
-                        //           uwaga do ref możemy też przekazać funkcję, która przyjmuje jako argument (node) - referencje do DOM obiektu
-                        //           takie funkcje nazywają się 'callback'
-                        <li
-                            key={el}
-                            ref={(node) => {
-                                const map = getDomList();
-                                if (node) {
-                                    // dla danego 'key' posiadamy 'referencję' :)
-                                    map.set(el, node);
-                                } else {
-                                    map.delete(el);
-                                }
-                            }}
-                        >
-                            {el}
-                        </li>
-                    );
-                })}
-            </ul>
-            {/* UWAGA !!! takiej referencji nie da się przekazać dla KOMPONENTU, potrzebny jest specjalny mechanizm 'FORWARD_REF' */}
-            {/* TEN NIE DZIAŁA */}
-            {/* <SideEffectRefsChild ref={componentRef} /> */}
-            {/* TEN DZIAŁA */}
-            <SideEffectRefsChildForward ref={componentRef} />
-            <SideEffectRefsChildForwardOgraniczenia ref={ograniczeniaRef} />
-        </>
-    );
+              {el}
+            </li>
+          );
+        })}
+      </ul>
+      {/* UWAGA !!! takiej referencji nie da się przekazać dla KOMPONENTU, potrzebny jest specjalny mechanizm 'FORWARD_REF' */}
+      {/* TEN NIE DZIAŁA */}
+      {/* <SideEffectRefsChild ref={componentRef} /> */}
+      {/* TEN DZIAŁA */}
+      <SideEffectRefsChildForward ref={componentRef} />
+      <SideEffectRefsChildForwardOgraniczenia ref={ograniczeniaRef} />
+    </>
+  );
 }
 
 //                              ref otrzymujemy jako 2 argument za 'props' WYMAGA 'forwardRef' aby działało
 function SideEffectRefsChild(props, ref) {
-    console.log("Puste props = ", props);
+  console.log("Puste props = ", props);
 
-    function handleClick() {
-        if (ref?.current) {
-            ref.current.innerText = "Działa Ref w Komponencie";
-        }
+  function handleClick() {
+    if (ref?.current) {
+      ref.current.innerText = "Działa Ref w Komponencie";
     }
+  }
 
-    return (
-        // to jest pełny dostęp ze strony REF rodzica do tego komponentu
-        <div ref={ref} onClick={handleClick}>
-            TEST
-        </div>
-    );
+  return (
+    // to jest pełny dostęp ze strony REF rodzica do tego komponentu
+    <div ref={ref} onClick={handleClick}>
+      TEST
+    </div>
+  );
 }
 
 // To jest mechanizm przekazania ref poprzez KOMPONENT - Wykorzystujemy tzw: HigherOrder
@@ -159,23 +159,23 @@ function SideEffectRefsChild(props, ref) {
 const SideEffectRefsChildForward = forwardRef(SideEffectRefsChild);
 
 const SideEffectRefsChildForwardOgraniczenia = forwardRef(
-    function SideEffectRefsChildOgraniczenia(props, ref) {
-        const domRef = useRef(null);
-        // możemy ograniczyć dostęp rodzica do DOM komponentu poprzez HOOK 'useImperativeHandle'
-        // pozwa na określić co chcemy aby zostało przekazane do 'ref' wewnątrz rodzica (ogarniczenie na properties, funkcje itp...)
-        // tutaj do 'ref' przekazujemy wyłącznie funkcję DOM 'focus'i nic więcej, 'ref' nawet CSS'ów nie zobaczy ;)
-        // więc tak na prawdę OKREŚLAMY jaką wartośc ma mieć dany 'ref'
-        // tutaj akturat będzie to obiekt z property 'focus', które jest funkcją
-        useImperativeHandle(ref, () => {
-            return {
-                focus() {
-                    domRef.current.focus();
-                },
-            };
-        });
-        // a faktyczną referencję na obiekt trzyma wewnętrzna referencja 'domRef', do której rodzic nie ma dostępu
-        return <div ref={domRef}></div>;
-    }
+  function SideEffectRefsChildOgraniczenia(props, ref) {
+    const domRef = useRef(null);
+    // możemy ograniczyć dostęp rodzica do DOM komponentu poprzez HOOK 'useImperativeHandle'
+    // pozwa na określić co chcemy aby zostało przekazane do 'ref' wewnątrz rodzica (ogarniczenie na properties, funkcje itp...)
+    // tutaj do 'ref' przekazujemy wyłącznie funkcję DOM 'focus'i nic więcej, 'ref' nawet CSS'ów nie zobaczy ;)
+    // więc tak na prawdę OKREŚLAMY jaką wartośc ma mieć dany 'ref'
+    // tutaj akturat będzie to obiekt z property 'focus', które jest funkcją
+    useImperativeHandle(ref, () => {
+      return {
+        focus() {
+          domRef.current.focus();
+        },
+      };
+    });
+    // a faktyczną referencję na obiekt trzyma wewnętrzna referencja 'domRef', do której rodzic nie ma dostępu
+    return <div ref={domRef}></div>;
+  }
 );
 
 /*
@@ -197,7 +197,7 @@ UWAGA !!! Aby wykonać fajnie nasze operacje na DOM z użyciem REF, ale w odpowi
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
 function SideEffectEffect() {
-    /*
+  /*
 		nowy HOOK 'useEffect' -> bardzo potęzny, ale uwazać aby go nie naduzywać 
 		EFFECT pozwalają na WYKONYWANIE:
 			- Side effectów
@@ -216,18 +216,18 @@ function SideEffectEffect() {
 						- idealne do wyjścia poza Reacta i SYNCHRONIZACJI z ZEWNĘTRZNYMI SYSTEMAMI (np: HTTP, operacje na REF, BrowserAPI,  zewnętrzne biblioteki itp...)
 						- działają w DOMKNIECIU (CLOUSER) - wieć wartości w EFFEKCIE są zalezne od Wartości w danym RENDERZE
 		*/
-    const [stan, setStan] = useState(1);
+  const [stan, setStan] = useState(1);
 
-    // Deklaracja EFFECTU poprzez HOOK 'useEffect',
-    // 1- argument  funkcja do wywołania
-    useEffect(() => {
-        // tutaj mamy tylko 1 argument | funkcja wykona się po kazdej fazie COMMIT (po wproawdzeniu zman na ekran), która objemuje komponent
-        // czyli react czeka z wykonanie kodu podanego tutaj, az zmiany pojawią się na ekranie
-        // (bardzo rzadko uzywamy efectów bez 2-go argumentu ) - powinien się wykonywać tylko wtedy gdy naprawdę musi
-        //
-        // najlepsze miejsce np: do modyfikacji DOM poprzez REF, które mają się wykonać automatycznie
-        // synchronizować z innymi bibliotekami np: z jQuery
-        /*
+  // Deklaracja EFFECTU poprzez HOOK 'useEffect',
+  // 1- argument  funkcja do wywołania
+  useEffect(() => {
+    // tutaj mamy tylko 1 argument | funkcja wykona się po kazdej fazie COMMIT (po wproawdzeniu zman na ekran), która objemuje komponent
+    // czyli react czeka z wykonanie kodu podanego tutaj, az zmiany pojawią się na ekranie
+    // (bardzo rzadko uzywamy efectów bez 2-go argumentu ) - powinien się wykonywać tylko wtedy gdy naprawdę musi
+    //
+    // najlepsze miejsce np: do modyfikacji DOM poprzez REF, które mają się wykonać automatycznie
+    // synchronizować z innymi bibliotekami np: z jQuery
+    /*
 			#################
 			UWAGA !!! Bardzo uwazać na NIESKONCZONE PETLE (infinite loop)
 					useEffect(() => {
@@ -238,57 +238,55 @@ function SideEffectEffect() {
 																						// ALE NIE SAM STAN, który zmieniamy
 					});
 			*/
-    });
+  });
 
-    // PEŁNY ZAKRES FUNKCJONALNOŚCI
-    // 1- argument (funkcja, która ma się wywołać na INICJALNYM RENDERZE oraz gdy zmienią się wartości podane w 2-m argumencie )
-    // 2- argument (TABLICA ZALEŻNOŚCI), (moze być pusta lub zawierać stan, props, setteryStanu, inne zmienne itp..)
-    //						jeśli jakakakolwiek wartośc się zmieni (lub jej referencja) to funkcja z 1-go argumentu się WYWOŁA ponownie)
-    //						react porównuje ze sobą elementy z TABILCY ZALEZNOŚCI poprzez 'Osbject.is'
-    useEffect(() => {
-        // Opcjonalne mozemy zwrócić tzw' CLEANUP FUNCION - wykonuje się gdy:
-        //	-) tuz przed URCHOMIENIEM EFFEKTU (tak dokładnie przed funkcja w useEffect(() => {...przedTym...}))
-        // 	-) przy UNMOUNT (odmontowaniu - usunięciu ) KOMPONENTU
-        return () => {
-            // idealna do wprawdzenia czyszczenia np:
-            // -- wyczyszczenie timeoutów np: clearTimeout / clearInterval
-            // -- zatrzymanie zmian / odłączenie od serwisów / odsubskrypowanie
-            // -- wyłączenie animacji
-            // -- itp..
-        };
-        // tablica zalezności musi posiadać:
-        // -) WSZYSTKIE props, state, funkcje (tez settery - te mozna omijać) [OGOLNIE to wszystko co jest uzywane wewnątrz funkcji z argumentu 1 !!!!]
-        // 																									co pochodzi z poza zakresu tej funkcji i jest w ramach zakresu KOMPONENTU
-        //																									+ to co SAMI CHCEMY ABY WYWOŁAŁO EFFECTs
-        //																									UWAGA !! nie wymaga 'REF' - react gwarantuje, ze zawsze jest to ten sam obiekt
-        //																												to samo jest z 'SETTERAMI_STANU' -> mozna omijać zalezy od konfuguracji ESLINT'a\
-        //																												OMIJAC MOZNA TYLKO STABLINE WARTOŚCI (np: ref z forwardRef nie jest stabilne)
-        // -) o tym co jest potrzebne pięknie podpowiada nam ESLINT
-    }, []);
+  // PEŁNY ZAKRES FUNKCJONALNOŚCI
+  // 1- argument (funkcja, która ma się wywołać na INICJALNYM RENDERZE oraz gdy zmienią się wartości podane w 2-m argumencie )
+  // 2- argument (TABLICA ZALEŻNOŚCI), (moze być pusta lub zawierać stan, props, setteryStanu, inne zmienne itp..)
+  //						jeśli jakakakolwiek wartośc się zmieni (lub jej referencja) to funkcja z 1-go argumentu się WYWOŁA ponownie)
+  //						react porównuje ze sobą elementy z TABILCY ZALEZNOŚCI poprzez 'Osbject.is'
+  useEffect(() => {
+    // Opcjonalne mozemy zwrócić tzw' CLEANUP FUNCION - wykonuje się gdy:
+    //	-) tuz przed URCHOMIENIEM EFFEKTU (tak dokładnie przed funkcja w useEffect(() => {...przedTym...}))
+    // 	-) przy UNMOUNT (odmontowaniu - usunięciu ) KOMPONENTU
+    return () => {
+      // idealna do wprawdzenia czyszczenia np:
+      // -- wyczyszczenie timeoutów np: clearTimeout / clearInterval
+      // -- zatrzymanie zmian / odłączenie od serwisów / odsubskrypowanie
+      // -- wyłączenie animacji
+      // -- itp..
+    };
+    // tablica zalezności musi posiadać:
+    // -) WSZYSTKIE props, state, funkcje (tez settery - te mozna omijać) [OGOLNIE to wszystko co jest uzywane wewnątrz funkcji z argumentu 1 !!!!]
+    // 																									co pochodzi z poza zakresu tej funkcji i jest w ramach zakresu KOMPONENTU
+    //																									+ to co SAMI CHCEMY ABY WYWOŁAŁO EFFECTs
+    //																									UWAGA !! nie wymaga 'REF' - react gwarantuje, ze zawsze jest to ten sam obiekt
+    //																												to samo jest z 'SETTERAMI_STANU' -> mozna omijać zalezy od konfuguracji ESLINT'a\
+    //																												OMIJAC MOZNA TYLKO STABLINE WARTOŚCI (np: ref z forwardRef nie jest stabilne)
+    // -) o tym co jest potrzebne pięknie podpowiada nam ESLINT
+  }, []);
 
-    useEffect(() => {
-        console.warn("STAN SIE ZMIENIŁ teraz wynosi STAN = ", stan);
-        // funckja wywoła się:
-        // 1) po inicjalnym renderze Komponentu (MOUNT -> PIERWSZE mojawienie się komponentu na ekranie)
-        // 1a) podczas DEVELOPMENTU - na MOUNT useEffect wywołują się 2 razy (przez komponent <StrictMode>) <-- najlepiej tak zostawić
-        //					jest to celem sprawdzenia czy nie ma bugów  związanych z czyszczeniem po EFFECTACH
-        //					Dlatego tez React w <strictMode> najpierw dodaje i montuje (MOUNT) komponent i od razu go udmontowuje (UNMOUNT) i montuje ponownie
-        //					pozwa nam to na sprawdzenie czy EFFECT, które wymagają sprzątania są sprzątane
-        //					przy budowaniu Paczki produkcyjnej REACT SIE TEGO POZBYWA i bedzie wywołanie tylko 1 RAZ
-        // 2) za kazdym razem gdy referencja do 'stan' się zmieni (dla typów prostych jest to zmiana wartości, dla obiektów nowy obiekt się pojawi)
-    }, [stan]);
+  useEffect(() => {
+    console.warn("STAN SIE ZMIENIŁ teraz wynosi STAN = ", stan);
+    // funckja wywoła się:
+    // 1) po inicjalnym renderze Komponentu (MOUNT -> PIERWSZE mojawienie się komponentu na ekranie)
+    // 1a) podczas DEVELOPMENTU - na MOUNT useEffect wywołują się 2 razy (przez komponent <StrictMode>) <-- najlepiej tak zostawić
+    //					jest to celem sprawdzenia czy nie ma bugów  związanych z czyszczeniem po EFFECTACH
+    //					Dlatego tez React w <strictMode> najpierw dodaje i montuje (MOUNT) komponent i od razu go udmontowuje (UNMOUNT) i montuje ponownie
+    //					pozwa nam to na sprawdzenie czy EFFECT, które wymagają sprzątania są sprzątane
+    //					przy budowaniu Paczki produkcyjnej REACT SIE TEGO POZBYWA i bedzie wywołanie tylko 1 RAZ
+    // 2) za kazdym razem gdy referencja do 'stan' się zmieni (dla typów prostych jest to zmiana wartości, dla obiektów nowy obiekt się pojawi)
+  }, [stan]);
 
-    function handleCLick() {
-        setStan((prev) => prev + 1);
-    }
-    return (
-        <div>
-            <button onClick={handleCLick}>
-                Zwiększ o 1 | wartość = ${stan}
-            </button>
-            <SideEffectEffectDevelopment />
-        </div>
-    );
+  function handleCLick() {
+    setStan((prev) => prev + 1);
+  }
+  return (
+    <div>
+      <button onClick={handleCLick}>Zwiększ o 1 | wartość = ${stan}</button>
+      <SideEffectEffectDevelopment />
+    </div>
+  );
 }
 
 /*
@@ -299,62 +297,62 @@ najlepiej przed 'App'dsa
 */
 
 function SideEffectEffectDevelopment() {
-    /*
+  /*
 	##########################
 	## WIDGETS -> zewnetrzne elementy UI (nie napisane w Reactie)
 	VVVVVVVVVVVVV
 	*/
-    useEffect(() => {
-        /* np: WIDGET dialog -> i chcemy go urudzomic od razu (ale aby pokazać DIALOG to musi on być zamknięty, bo inaczej zwróci BŁAD)
+  useEffect(() => {
+    /* np: WIDGET dialog -> i chcemy go urudzomic od razu (ale aby pokazać DIALOG to musi on być zamknięty, bo inaczej zwróci BŁAD)
 			const dialog  = dialogRef.current;
 			dialog.showModal();
 			*/
-        return () => {
-            /* dialog wymaga zamkniecia aby mogl sie ponownie otworzyc -- daltego wymusimy zamkniecie na czyszczenie
+    return () => {
+      /* dialog wymaga zamkniecia aby mogl sie ponownie otworzyc -- daltego wymusimy zamkniecie na czyszczenie
 				dialog.close();
 					*/
-        };
-    }, []);
+    };
+  }, []);
 
-    /*
+  /*
 	##########################
 	## EVENTY 
 	VVVVVVVVVVVVV
 	*/
-    useEffect(() => {
-        // deklarujemy funkcje do obslugi event, aby na podstawie jej referencji móc ją później usunąć
-        function handleScroll(e) {
-            console.log(`X = ${e.clientX} | Y = ${e.clientY}`);
-        }
-        window.addEventListener("scroll", handleScroll);
-        return () => {
-            // JEŚLI DODAJEMY 'event listenera' nie zapomnijmy go usunąć
-            window.removeEventListener("scroll", handleScroll);
-        };
-    }, []);
+  useEffect(() => {
+    // deklarujemy funkcje do obslugi event, aby na podstawie jej referencji móc ją później usunąć
+    function handleScroll(e) {
+      console.log(`X = ${e.clientX} | Y = ${e.clientY}`);
+    }
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      // JEŚLI DODAJEMY 'event listenera' nie zapomnijmy go usunąć
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
-    /*
+  /*
 	##########################
 	## ANIMACJE CSS
 	VVVVVVVVVVVVV
 	*/
-    useEffect(() => {
-        const el = document.querySelector("h1");
-        el.style.opacity = 1; // uruchomienie ANIMACJI
-        return () => {
-            el.style.opacity = 0; // powrót do wartości WYJSCIOWEJ
-        };
-    }, []);
+  useEffect(() => {
+    const el = document.querySelector("h1");
+    el.style.opacity = 1; // uruchomienie ANIMACJI
+    return () => {
+      el.style.opacity = 0; // powrót do wartości WYJSCIOWEJ
+    };
+  }, []);
 
-    /*
+  /*
 	##########################
 	## FETCH (rządanie HTTP) -- UWAGA, NAJLEPIEJ KORZYSTAC Z ZEWNETRZNYCH BIBLIOTEK (w ostatecznosci w Effecie)
 	VVVVVVVVVVVVV
 	*/
-    useEffect(() => {
-        const abortController = new AbortController();
-        // LEPSZE sa zewnetrzne biblioteki - zapewniaja bezpieczenstwo oraz mechanim CACHOWANIA odpowiedzi
-        /*
+  useEffect(() => {
+    const abortController = new AbortController();
+    // LEPSZE sa zewnetrzne biblioteki - zapewniaja bezpieczenstwo oraz mechanim CACHOWANIA odpowiedzi
+    /*
 			OGOLNIE ZAMIST klasycznego 'fetch' lepiej stosować:
 			- rządania HTTP z frameworków REACTOWYCH (Next.js)
 			- ZEWNETRZNE BIBILIOTEKI:
@@ -364,43 +362,43 @@ function SideEffectEffectDevelopment() {
 			- własne rozwiązania, które obsługują
 				'duplikowane rządania', 'cachowanie odpowiedzi' 'wstepnego pobierania tzw; prefetching' itp...
 			*/
-        fetch("https://swapi.dev/api/people/1/", {
-            abort: abortController.signal,
-        })
-            .then((res) => {
-                // console.log("FETCH RES = ", res);
-                return res.json();
-            })
-            .then((data) => {
-                console.log("FETCH DATA = ", data);
-            })
-            .catch((err) => {
-                console.log("FETCH ERROR = ", err);
-            });
+    fetch("https://swapi.dev/api/people/1/", {
+      abort: abortController.signal,
+    })
+      .then((res) => {
+        // console.log("FETCH RES = ", res);
+        return res.json();
+      })
+      .then((data) => {
+        console.log("FETCH DATA = ", data);
+      })
+      .catch((err) => {
+        console.log("FETCH ERROR = ", err);
+      });
 
-        return () => {
-            // rządania HTTP musimy przerywać -- za pomocą AbortController
-            abortController.abort();
-        };
-    }, []);
+    return () => {
+      // rządania HTTP musimy przerywać -- za pomocą AbortController
+      abortController.abort();
+    };
+  }, []);
 
-    /*
+  /*
 	#############
 	## DANE ANALITYCZNE 
 	VVVVVVVVVVVVV
 	*/
-    useEffect(() => {
-        // logAnalitics()
-    }, []);
+  useEffect(() => {
+    // logAnalitics()
+  }, []);
 
-    /*
+  /*
 	#############
 	##
 	VVVVVVVVVVVVV
 	*/
-    useEffect(() => {}, []);
+  useEffect(() => {}, []);
 
-    return <></>;
+  return <></>;
 }
 
 // #################################
@@ -408,7 +406,7 @@ function SideEffectEffectDevelopment() {
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
 function SideEffectEffectNotNeeded() {
-    /*
+  /*
 	NIE POTRZBUJESZ useEffect ABY:
 	-) Zmienić dane (transform / map) do renderowanie
 	-) obsłuzyć eventy uzytkowników
@@ -420,18 +418,18 @@ function SideEffectEffectNotNeeded() {
 	//						UWAGA !!! NIE robić REDUNDANCJI!!! - mając IMIE i NAZWISKO nie potrzebny jest stan PELNE_IMIE	
 	*/
 
-    // PRZY UZYWANIU EFFECTOW PAMIETAJMY ZE:
-    // - EFFEKTY wywołują sie po MOUNT (pokazaniu komponentu na ekranie)
-    //			-- wiec ustawienie w nich stanu (na bazie np: zmiany props) spowoduje rerender,
-    //					gdzie 1 wywołał się ze starą wartościa props, a 2 ze zmianami na bazie nowej
-    //					DLATEGO ZAWSZE LEPIEJ jest wyrzucić takie zmiany do :
-    //								-- fazy renderowania
-    //								-- Event handlersów
-    //												gdy ustawiamy wiele stanów w 1 funkcji to REACT (BATCHUJE setteryStanów)
-    //												DZIEKI TEMU MAMY TYLKO 1 RERENDER - ustawiajac wszystkie stan w 1 odświezeniu
+  // PRZY UZYWANIU EFFECTOW PAMIETAJMY ZE:
+  // - EFFEKTY wywołują sie po MOUNT (pokazaniu komponentu na ekranie)
+  //			-- wiec ustawienie w nich stanu (na bazie np: zmiany props) spowoduje rerender,
+  //					gdzie 1 wywołał się ze starą wartościa props, a 2 ze zmianami na bazie nowej
+  //					DLATEGO ZAWSZE LEPIEJ jest wyrzucić takie zmiany do :
+  //								-- fazy renderowania
+  //								-- Event handlersów
+  //												gdy ustawiamy wiele stanów w 1 funkcji to REACT (BATCHUJE setteryStanów)
+  //												DZIEKI TEMU MAMY TYLKO 1 RERENDER - ustawiajac wszystkie stan w 1 odświezeniu
 
-    // ZASADY:
-    /*
+  // ZASADY:
+  /*
 	-) jesli coś mozna wyliczyć w fazie RENDER to tak zróbmy, bez useEffect
 	-) aby cachować drogie w obliczeniach operacje uzyjmy 'useMemo' -> o tym później
 	-) by zresetować STAN CAŁEGO KOMPONENTU zmieńmy jego 'key' 
@@ -453,45 +451,46 @@ function SideEffectEffectNotNeeded() {
 																				wykona sie ostatni i jaki stan ustawi 
 	*/
 
-    const [firstName] = useState("Aga");
-    const [lastName] = useState("Maciek");
-    const fullName = `${firstName}${lastName}`; // wartość mozna wyliczyc w fazie RENDER, STAN NIE POTRZEBNY
+  const [firstName] = useState("Aga");
+  const [lastName] = useState("Maciek");
+  const fullName = `${firstName}${lastName}`; // wartość mozna wyliczyc w fazie RENDER, STAN NIE POTRZEBNY
 
-    return (
-        <>
-            <SideEffectEffectNotNeededStateReset userId={123} key={123} />
-            <SideEffectEffectNotNeededDostosowanieWartociPrzezProps age={29} />
-            <SideEffectEffectNotNeededZeroChainEffectow />
-        </>
-    );
+  return (
+    <>
+      {fullName}
+      <SideEffectEffectNotNeededStateReset userId={123} key={123} />
+      <SideEffectEffectNotNeededDostosowanieWartociPrzezProps age={29} />
+      <SideEffectEffectNotNeededZeroChainEffectow />
+    </>
+  );
 }
 
 function SideEffectEffectNotNeededStateReset({ userId }) {
-    /*
+  /*
     useEffect(() => {
         // resetowanie stanu
     }, [userId]);			// <<--- bardzo złe podejście i na prawdę nie wymagane 
 											// zamist useEffect z RESETOWANIEM stanu KOMPONENT powienien dostać atrybut 'KEY'
 		*/
-    return <>{userId}</>;
+  return <>{userId}</>;
 }
 
 function SideEffectEffectNotNeededDostosowanieWartociPrzezProps({ age }) {
-    const [stan, setStan] = useState("Aga");
-    const [prevAge, setPrevAge] = useState(age); // przechowywanie poprzednich wartość z PROPS w STANIE
-    //																							jest lepsze niz zmiana przez useEffect [w ostatecznosci mozna :)]
-    if (age !== prevAge) {
-        //																					a dostosowanie wartości juz w fazie renderowania
-        setPrevAge(age);
-        setStan("Agusia");
-    }
-    return <>{stan}</>;
+  const [stan, setStan] = useState("Aga");
+  const [prevAge, setPrevAge] = useState(age); // przechowywanie poprzednich wartość z PROPS w STANIE
+  //																							jest lepsze niz zmiana przez useEffect [w ostatecznosci mozna :)]
+  if (age !== prevAge) {
+    //																					a dostosowanie wartości juz w fazie renderowania
+    setPrevAge(age);
+    setStan("Agusia");
+  }
+  return <>{stan}</>;
 }
 
 function SideEffectEffectNotNeededZeroChainEffectow() {
-    // UWAGA !!! NIGDY NIE ROBIC ZALEZNOSCI, ZE 1 EFFECT WYWOLUJE 2, 3 itp... !!!!!
-    // Starsznie spowalnia i powoduje MASE NIEPOTRZBNYCH RERENDEROW
-    /*
+  // UWAGA !!! NIGDY NIE ROBIC ZALEZNOSCI, ZE 1 EFFECT WYWOLUJE 2, 3 itp... !!!!!
+  // Starsznie spowalnia i powoduje MASE NIEPOTRZBNYCH RERENDEROW
+  /*
     console.warn("WYWOŁANE");
     const [stan1, setStan1] = useState(1);
     const [stan2, setStan2] = useState(1);
@@ -509,9 +508,9 @@ function SideEffectEffectNotNeededZeroChainEffectow() {
     }, [stan2]);
 		*/
 
-    // Wyliczac takie ciągi w fazie renderowania ORAZ w Event-handlersach
+  // Wyliczac takie ciągi w fazie renderowania ORAZ w Event-handlersach
 
-    return <></>;
+  return <></>;
 }
 
 // #################################
