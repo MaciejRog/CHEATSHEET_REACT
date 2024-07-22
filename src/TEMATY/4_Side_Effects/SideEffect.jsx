@@ -11,6 +11,7 @@ function SideEffect() {
         <div>
             <SideEffectRefs />
             <SideEffectEffect />
+            <SideEffectEffectNotNeeded />
         </div>
     );
 }
@@ -403,8 +404,115 @@ function SideEffectEffectDevelopment() {
 }
 
 // #################################
-// #### 3)
+// #### 3) EFFECT NIE SA ZAWSZE POTRZBENE
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function SideEffectEffectNotNeeded() {
+    /*
+	NIE POTRZBUJESZ useEffect ABY:
+	-) Zmienić dane (transform / map) do renderowanie
+	-) obsłuzyć eventy uzytkowników
+
+	EFFECTY mają:
+	-) SYNCHRONIZOWAC zewnętrzne elementy ze STANEM komponentów
+	-) POBIERAĆ DANE
+	-) UWAGA !!! CZASEM JEST TEZ UZYTECZNE ABY AKTUALIZOWAC STAN NA BAZIE 'KILKU" STNAOW
+	//						UWAGA !!! NIE robić REDUNDANCJI!!! - mając IMIE i NAZWISKO nie potrzebny jest stan PELNE_IMIE	
+	*/
+
+    // PRZY UZYWANIU EFFECTOW PAMIETAJMY ZE:
+    // - EFFEKTY wywołują sie po MOUNT (pokazaniu komponentu na ekranie)
+    //			-- wiec ustawienie w nich stanu (na bazie np: zmiany props) spowoduje rerender,
+    //					gdzie 1 wywołał się ze starą wartościa props, a 2 ze zmianami na bazie nowej
+    //					DLATEGO ZAWSZE LEPIEJ jest wyrzucić takie zmiany do :
+    //								-- fazy renderowania
+    //								-- Event handlersów
+    //												gdy ustawiamy wiele stanów w 1 funkcji to REACT (BATCHUJE setteryStanów)
+    //												DZIEKI TEMU MAMY TYLKO 1 RERENDER - ustawiajac wszystkie stan w 1 odświezeniu
+
+    // ZASADY:
+    /*
+	-) jesli coś mozna wyliczyć w fazie RENDER to tak zróbmy, bez useEffect
+	-) aby cachować drogie w obliczeniach operacje uzyjmy 'useMemo' -> o tym później
+	-) by zresetować STAN CAŁEGO KOMPONENTU zmieńmy jego 'key' 
+	-) by zresetować CZĘŚĆ STANU KOMPONENTUY zróbmy to fazie RENDER zapisując poprzednią wartość PROP (ostatecznie Effect)
+	-) TO CO MA SIĘ WYKONAĆ PRZY WYŚWIETLENIU KOMPONENTU jest w 'useEffect' -> reszta Side-effect w EVENT HANDLERSACH
+	-) Aktualizowanie stanu KILKU komponentów -> najlepiej zrobić w POJEDYNCZYM EVENT HANDLERZE
+	-) chcesz synchronizować stan w ROZNYCH komponentach -> Wynieś go do wspólnego RODZICA
+	-) CHECZ mieć FETCH (HTTPS) w 'useEffect'
+					-- rozwaz gotowe biblioteki
+					-- gotowe rozwiazania z frameworkow
+					-- napisz walsny useFetch (pamietaj o cachowaniu i czyszczeniu (CLEANUP FUNCION))
+											CLEANUP FUNCION -> jako np: AbortController | zapobiega tzw Race condition
+																				 czyli sytuacji wywołania wiele razy tego samego zapytania HTTP
+																				 i nie wiedzy, w której kolejności się wykonaja i jaki będzie rezultat
+																				 np: przy pobieraniu listy 'option' dla tagu 'select' 
+																				w odpowiedzi na wpisywany tekst uzytkownika
+																				jak wpisze 'czesc' -> fetch wywola się 5 razy !!!
+																				dla 'c' 'cz' 'cze' 'czes' 'czesc' ->  i bez CLEAN UP nie mamy pewnosci, ktory 
+																				wykona sie ostatni i jaki stan ustawi 
+	*/
+
+    const [firstName] = useState("Aga");
+    const [lastName] = useState("Maciek");
+    const fullName = `${firstName}${lastName}`; // wartość mozna wyliczyc w fazie RENDER, STAN NIE POTRZEBNY
+
+    return (
+        <>
+            <SideEffectEffectNotNeededStateReset userId={123} key={123} />
+            <SideEffectEffectNotNeededDostosowanieWartociPrzezProps age={29} />
+            <SideEffectEffectNotNeededZeroChainEffectow />
+        </>
+    );
+}
+
+function SideEffectEffectNotNeededStateReset({ userId }) {
+    /*
+    useEffect(() => {
+        // resetowanie stanu
+    }, [userId]);			// <<--- bardzo złe podejście i na prawdę nie wymagane 
+											// zamist useEffect z RESETOWANIEM stanu KOMPONENT powienien dostać atrybut 'KEY'
+		*/
+    return <>{userId}</>;
+}
+
+function SideEffectEffectNotNeededDostosowanieWartociPrzezProps({ age }) {
+    const [stan, setStan] = useState("Aga");
+    const [prevAge, setPrevAge] = useState(age); // przechowywanie poprzednich wartość z PROPS w STANIE
+    //																							jest lepsze niz zmiana przez useEffect [w ostatecznosci mozna :)]
+    if (age !== prevAge) {
+        //																					a dostosowanie wartości juz w fazie renderowania
+        setPrevAge(age);
+        setStan("Agusia");
+    }
+    return <>{stan}</>;
+}
+
+function SideEffectEffectNotNeededZeroChainEffectow() {
+    // UWAGA !!! NIGDY NIE ROBIC ZALEZNOSCI, ZE 1 EFFECT WYWOLUJE 2, 3 itp... !!!!!
+    // Starsznie spowalnia i powoduje MASE NIEPOTRZBNYCH RERENDEROW
+    /*
+    console.warn("WYWOŁANE");
+    const [stan1, setStan1] = useState(1);
+    const [stan2, setStan2] = useState(1);
+
+    useEffect(() => {
+        setStan1((prev) => prev + 1);
+    }, []);
+
+    useEffect(() => {
+        setStan1((prev) => prev + 1);
+    }, [stan1]);
+
+    useEffect(() => {
+        console.warn("TUTAJ");
+    }, [stan2]);
+		*/
+
+    // Wyliczac takie ciągi w fazie renderowania ORAZ w Event-handlersach
+
+    return <></>;
+}
 
 // #################################
 // #### 4)
