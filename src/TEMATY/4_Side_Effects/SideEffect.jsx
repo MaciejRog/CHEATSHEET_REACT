@@ -12,6 +12,8 @@ function SideEffect() {
       <SideEffectRefs />
       <SideEffectEffect />
       <SideEffectEffectNotNeeded />
+      <SideEffectLifecycle />
+      <SideEffectSepracjaEventowOdEffectow />
     </div>
   );
 }
@@ -322,7 +324,7 @@ function SideEffectEffectDevelopment() {
   useEffect(() => {
     // deklarujemy funkcje do obslugi event, aby na podstawie jej referencji móc ją później usunąć
     function handleScroll(e) {
-      console.log(`X = ${e.clientX} | Y = ${e.clientY}`);
+      console.warn("e = ", e);
     }
     window.addEventListener("scroll", handleScroll);
     return () => {
@@ -514,12 +516,97 @@ function SideEffectEffectNotNeededZeroChainEffectow() {
 }
 
 // #################################
-// #### 4)
+// #### 4) LIFECYCLE (CYKL ŻYCIA)
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
+function SideEffectLifecycle() {
+  /*
+  EFFECTY mają inny cykl życia niż komponenty.
+  DLATEGO NIE MOŻEMY UTOŻSAMIAĆ CUKLUŻYCIA KOMPONENTU Z EFFECTAMI (to są 2 różne cykle!!!)
+
+  CYKL ŻYCIA KOMPONENTU:
+    1) MOUNT -> zamontowanie komponentu (Jego dodanie na ekran)
+    2) UPDATE -> Wywołanie RERENDERU i COMMITU (przez zmianę PROPS lub STATE)
+    3) UNMOUNT -> odmontowanie komponentu (Jego usunięcie z ekranu)
+  
+  CYKL ŻYCIA EFFECTU [może powtarzać się wiele razy - zależnie od tablicy zależności i zmian w STATE i PROPS]
+    1) SYNCHRONIZACJA Z CZYMŚ (wywołanie na MOUNT komponentu i każdy UPDATE (który dotyka tablicy zależności - zmienia wartości / referencje))
+    2) CLEANUP - KONIEC SYNCHRONIZACJI (wywołanie na UNMOUNT i przed rozpoczęcieciem SYNCHRONIZACJI)
+
+  synchronizacja (cykl życia efektu), zależy od reaktywnych wartości przekazanych w tablicy zależności.
+  REAKTYWNE WARTOŚCI -> props, state i inne wartości wewnątrz komponentu (wyliczane podczas RENDEROWANIE i biorące udział w przepływanie danych)
+                                              zmienne i funkcje (z top-levelu komponentu)
+                                              
+  UWAGA!!! NIE WSZYSTKO MOŻE BYĆ ZALEZNOŚCIĄ!!!!
+            MUTABLE VALUE, NIE MOGĄ BYĆ !!!! 
+            MUTABLE VALUES (wraz ze zmiennymi globalnymi) NIE SĄ REAKTYWNE -> czyli takie zmienne, których zmiana nie wywołuje RERENDERINGU
+
+                  np: location.pathname (z 'window') -> zmian nie wywoła re-renderowania [oraz zniszczy 'PURE' komponentu]
+                                                   bo odczytamy mutable data podczas fazy renderowania (w niej jest wyliczana tablica zależności)
+                      ref.current -> zmian nie wywoła re-renderowania
+  
+  UWAGA!!! 
+            STABLE VALUE NIE SĄ REAKTYWNE -> np: 'ref', 'setStan' React dba o to, że zawsze będą to te same referencje 
+            STABLE -> mogą być w tablicy zależności (ale efekt jest taki jakby ich tam nie było)
+
+  W TABLICY ZALEŻNOŚCI, ZAWSZE MUSZĄ BYĆ WSZYSTKIE 'REAKTYWNE WARTOŚCI', których effect używa:
+    czasem może to powodować błędy, które można rozwiązać poprzez:
+      -) wydzelenie wielu efektów [każdy na osobny temat synchronizacji]
+      -) unikać OBIEKTÓW i FUNKCJI w tablicach zależności (zawsze będą miały nową referencję i wywołają EFEKT przy RERENDERINGU)
+                trzeba stosować 'useMemo' dla OBIEKTÓW i 'useCallback' dla FUNKCJI
+  */
+  return <></>;
+}
+
 // #################################
-// #### 5)
+// #### 5) ODZIELENIA EVENTÓW OD EFEKTÓW
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function SideEffectSepracjaEventowOdEffectow() {
+  /*
+  EVENTY -> wywołane przez INTERAKCJE [wymagają MANUALNEJ INGERENCJI] (np: click, scroll itp...)
+            logika wewnątrz EVNETÓW jest NIE REAKTYWNA
+  EFFECTY -> wywołane przez ZMIANĘ REAKTYWNEJ WARTOŚCI [wykonywane poniekąd jako AUTOMATYCZNE] (np: prop, state)
+              logika wewnątrz EFFEKTÓW jest REAKTYWNA
+  UWAGA!!!
+    może być sytuacja gdy chcemy wywoływać jakieś zdarzenie w EFFEKCIE bazujące na REAKTYWNEJ WARTOŚCI, ale nie chcemy 
+    aby zmiana tej wartości powodowała ponowne wywołanie EFFEKTU (czyli aby można z niej było skorzystać w EFFEKCIE bez podania jej
+    w tablicy zależności tego efektu)
+
+  DO TEGO WPROWADZONO NOWY HOOK 'useEffectEvent' 
+    UWAGA na stan '2024.07.23' jest w fazie EKSPERYMENTALNEJ (nie dostępny póki co - dlatego poniższy kod jest zakomentowany)
+  */
+
+  /*
+  const [stan] = useState(123);
+  const [event] = useState("ABC");
+
+  // hook 'useEffectEvent' -> służy do przeniesienie NIE REAKTYWNEJ logiki z 'useEffect'
+  const onEvent = useEffectEvent(() => {  // może otrzymać argumenty (które zostaną dostarczone z poziomu wywołanie w Efekcie)
+    //... tutaj funkcja do wywołania, która nie wywoła ponownie effektu (mimo iż bazuje na reaktywnych wartościach)
+    // logika wewnątrz jest NIE reaktywna i ma dostęp do najnowszych wartości state i props
+    // jako iż 'onEvent' jest NIE reaktywny to nie musi być podany w tablicy zależności
+    // MOŻNA myśleć o 'EFFECT EVENTACH' jako o 'EVENT HANDLERSACH' 
+    // gdzie: 
+    //      'EVENT HANDLERS'  => wywołany na interakcję użytkownika
+    //      'EFFECT EVENT'    => wywołany autmatycznie przez Efekt
+
+    // OGRANICZENIA !!!!
+    //   -- useEffectEvent -> WYWOŁUJEMY TYLKO w useEffect
+    //   -- ZAKAZ przekazywanie 'useEffectEvent' do inncyh komponentów lub 'hooków'
+    
+    console.warn("EVENT TO = ", event);
+  });
+
+  useEffect(() => {
+    console.warn("STAN TO = ", stan);
+    onEvent();
+    //  efekty wywoła się przy każdej zmianie 'stan', ale NIGDY przy zmianie 'event' -> mimo iż wykorzystujemy tą reaktywną zmienna w effect evencie
+  }, [stan]);
+  */
+
+  return <></>;
+}
 
 // #################################
 // #### 6)
