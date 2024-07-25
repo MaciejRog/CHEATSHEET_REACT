@@ -14,6 +14,8 @@ function SideEffect() {
       <SideEffectEffectNotNeeded />
       <SideEffectLifecycle />
       <SideEffectSepracjaEventowOdEffectow />
+      <SideEffectRemovingDependencies />
+      <SideEffectCustomHook />
     </div>
   );
 }
@@ -559,7 +561,7 @@ function SideEffectLifecycle() {
 }
 
 // #################################
-// #### 5) ODZIELENIA EVENTÓW OD EFEKTÓW
+// #### 5) ODZIELENIA EVENTÓW OD EFEKTÓW 'useEffectEvent'
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
 function SideEffectSepracjaEventowOdEffectow() {
@@ -609,13 +611,80 @@ function SideEffectSepracjaEventowOdEffectow() {
 }
 
 // #################################
-// #### 6)
+// #### 6) USUWANIE 'EFFECT DEPENDENCIES' - TABLICA ZALEŻNOŚCI
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
-// #################################
-// #### 7)
-// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+function SideEffectRemovingDependencies() {
+  /*
+  LINTER (np: ESLINT) dba o to aby w tablicy zależności były wszystkie wykorzystywane w EFFEKCIE 'REAKTYWNE wartość'
+  REAKTYWNE WARTOŚCI -> to takie, które zmianiają się przy 'RERENDERIUNGU' np: funkcje top-level komponentu, zmienne w top-level itp..
+
+    -> czyli wszystko deklarowane poza komponentem nie jest reaktywną wartościa
+
+  ABY usunąć coś z tablicy zależności, musimy zmodyfikować KOD effectu
+
+  // UWAGA, możemy okłamać LINTERA poprzez poniższy komentarz, ale jest to 'BARDZO NIEBEZPIECZNE'
+  '// eslint-disable-next-line react-hooks/exhaoustive-deps' 
+
+  USUWANIE TABLICY w sposób POPRAWNY:
+  1) aby usuwać zależności w bezpieczny sposób musimy się zastanowić czy to jest wgl Effect a nie Event
+  2) jeśli tak to czy nie robi zbyt wielu rzeczy (rozbić 1 Effect na kilka mniejszych)
+  3) Zastosowanie 'useEffectEvent' <- ekseprymentalna funkcjonalność
+  4) Unikać 'Obiektów' i 'Funkcji' jako zależności -> przy deklaracji i re-renderze zawsze mają nową referencję 
+      albo bazować na prostym property Obiketu, albo użyć 'useMemo' 
+      albo bazwoać na wyniku funkcji (gdy są PURE) albo użyć 'useCallback'
+      lub wynieść deklarację poza komponent
+      lub deklarować wewnątrz Effectu
+  */
+  return <></>;
+}
 
 // #################################
-// #### 8)
+// #### 7) CUSTOM HOOK (Tworzenie własnych hooków)
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function SideEffectCustomHook() {
+  /*  
+  Możemy sami tworzyć hooki 
+  POZWALA to na WSPÓŁDZIELENIE LOGIKI między komponentami
+      -- UWAGA !!! LOGIKI, a nie STANU !!!  (każda instancja HOOK ma swój własny stan)
+
+  */
+  const stanMojHook = useMyHook(true);
+  const { stan, stan2 } = stanMojHook;
+  return (
+    <>
+      <p>
+        MÓJ HOOK = Stan = {stan} | Stan2 = {stan2}
+      </p>
+    </>
+  );
+}
+
+/*
+Aby stworzyć hook muismy napisac funkcję od słowa 'use'   np: 'useFetch' 'useDownload' 'useMark' itp...
+*/
+function useMyHook(isDone = false) {
+  /*
+  w CUSTOM HOOK możemy działać 1 do 1 jak w komponencie i wykorzystywać inne HOOKIE itp.
+  UWAGA!!! Jeśli nie korzystamy z innych hook, to nie róbmy CUSTOM HOOKA tylko zwykłąd funkcję 
+  UWAGA!!! Muszą być PURE (myslmy o nich jak o kawałkach komponentów)
+
+  Każdy re-render komponentu, kóry implementuje hook WYWOŁA GO CAŁEGO OD NOWA (więc ma dostęp do najnowszych przekazanych argumentów)
+  */
+  const [stan] = useState(11);
+  const [stan2] = useState(isDone ? "Zrobione" : "Niezrobione");
+  useEffect(() => {
+    //tylko dla przykładu pokazuję, że mozna ten effecty dodać
+  }, []);
+
+  /*
+  Natomiast to jest 1-na różnica między KOMPONENT i CUSTOM_HOOK (poza konwencją nazw)
+      tutaj ZWRACAMY STAN (reaktywna wartość dla komponentu, który wykorzysta naszego hooka), a nie kod JSX 
+      -- ogólnie CUSTOM HOOK mogą zwracać DOWOLNĄ wartość.
+  */
+  return {
+    stan,
+    stan2,
+  };
+}
