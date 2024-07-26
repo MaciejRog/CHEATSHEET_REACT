@@ -649,6 +649,7 @@ function SideEffectCustomHook() {
   POZWALA to na WSPÓŁDZIELENIE LOGIKI między komponentami
       -- UWAGA !!! LOGIKI, a nie STANU !!!  (każda instancja HOOK ma swój własny stan)
 
+  UWAGA!!! Wszystkie funkcjie w CUSTOM HOOK'ach NAJLEPIEJ opakować w 'useCallback'
   */
   const stanMojHook = useMyHook(true);
   const { stan, stan2 } = stanMojHook;
