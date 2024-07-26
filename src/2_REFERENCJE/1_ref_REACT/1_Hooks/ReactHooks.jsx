@@ -1,11 +1,11 @@
 import {
   createContext,
   memo,
-  Suspense,
   useCallback,
   useContext,
   useDebugValue,
   useDeferredValue,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -22,6 +22,8 @@ function ReactHooks() {
       <ReactHooksCallback />
       <ReactHooksContext />
       <ReactHooksDefferedValue />
+      {/* ##### CODZIENNE UŻYCIE + TYLKO CLIENT SIDE */}
+      <ReactHooksEffect />
 
       {/* ##### MNIEJ PRZYDATNE */}
       <ReactHooksDebugValue />
@@ -272,8 +274,22 @@ const ReactHooksDefferedValueChild = memo(
 );
 
 // #################################
-// #### useEffect
+// #### useEffect | DOKŁADNIE OPISANY w '1_TEMATY' '4_Side_Effects'
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactHooksEffect() {
+  /*  
+  EFFEKTY DZIAŁAJA TYLKO w 'client side'
+  */
+  useEffect(() => {
+    //funckja Effektu uruchamiana na zmianę tablicy zalezności i Init render
+    return () => {
+      //cleanUP
+    };
+  }, []);
+  // tablica zalezności wszystkie REaKTYWNE wartość, uzyte w Effekcie + to co ma go wywołać
+  return <p></p>;
+}
 
 // #################################
 // ####
