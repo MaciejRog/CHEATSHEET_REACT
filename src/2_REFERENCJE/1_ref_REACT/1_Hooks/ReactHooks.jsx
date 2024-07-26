@@ -1,4 +1,4 @@
-import { createContext, memo, useContext, useMemo } from "react";
+import { createContext, memo, useContext, useDebugValue, useMemo } from "react";
 import { useCallback } from "react";
 import { useState } from "react";
 
@@ -10,13 +10,19 @@ function ReactHooks() {
       ## FUNKJCONALNOŚCI PRODUKCYJNE
       VVVVVVVVVVVVVVVVVVVVVVVVVV
       */}
+      {/* ##### CODZIENNE UŻYCIE */}
       <ReactHooksCallback />
       <ReactHooksContext />
+
+      {/* ##### MNIEJ PRZYDATNE */}
+      <ReactHooksDebugValue />
+
       {/* 
       ##########################
       ## FUNKJCONALNOŚCI EKSEPRYMENTALNE
       VVVVVVVVVVVVVVVVVVVVVVVVVV
       */}
+      {/* ##### SERVER SIDE && CLIENT SIDE */}
       <ReactHooksActionState />
     </div>
   );
@@ -149,8 +155,36 @@ function ReactHooksContextChild() {
 }
 
 // #################################
-// ####
+// #### useDebugValue | Własne Labelki dla custom hooków
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactHooksDebugValue() {
+  const custom = useCustomHook();
+  return (
+    <>
+      <p>{custom}</p>
+    </>
+  );
+}
+
+function useCustomHook() {
+  const [state] = useState("ABC");
+  // F12 -> 'react-dev-tool' -> po najchaniu na komponent 'ReactHooksDebugValue' -> będzie opis 'default-custom'
+  // Więc dodaje labelkę 'opis', który pomaga w DEBUGOWANIU
+  // moze posiadać dowolny typ nawt Object
+  // PRZYJMUJE 2 atrybuty:
+  // 1) [WYMAGANY] Label value
+  // 2) [OPCJONALNY] format funcion [steruje jak ma się wyświetlać wartośc z argumentu 1]
+  //
+  // UWAGA nie dodawać do kazdego Custom Hook (a do takich co mają skomplikowaną strukturę)
+  useDebugValue(
+    state === "ABC" ? "default-custom" : "not-default-custom",
+    (label) => {
+      return label.toUpperCase();
+    }
+  );
+  return state;
+}
 
 // #################################
 // ####
