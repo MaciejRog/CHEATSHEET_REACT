@@ -1,6 +1,14 @@
-import { createContext, memo, useContext, useDebugValue, useMemo } from "react";
-import { useCallback } from "react";
-import { useState } from "react";
+import {
+  createContext,
+  memo,
+  Suspense,
+  useCallback,
+  useContext,
+  useDebugValue,
+  useDeferredValue,
+  useMemo,
+  useState,
+} from "react";
 
 function ReactHooks() {
   return (
@@ -13,6 +21,7 @@ function ReactHooks() {
       {/* ##### CODZIENNE UŻYCIE */}
       <ReactHooksCallback />
       <ReactHooksContext />
+      <ReactHooksDefferedValue />
 
       {/* ##### MNIEJ PRZYDATNE */}
       <ReactHooksDebugValue />
@@ -187,11 +196,83 @@ function useCustomHook() {
 }
 
 // #################################
-// ####
+// #### useDefferedValue | pozwala OPOŹNIĆ aktualizację UI
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
+function ReactHooksDefferedValue() {
+  /*
+  POZWALA OPOŹNIĆ AKTUALIZACJĘ UI (defer -> przełozyć na później)
+  Przyjmuje 2 argumenty:
+  1) value -> wartość, którą chcemy opóźnić 
+  2) [EKSPERYMENTALNE] -> wartość inicjalna [wykorzystywana przy INIT RENDER]
+
+
+  ZASTRZEŻENIA (caveat):
+  1) gdy jest wewnątrz 'TRANISTION' zawsze zwraca nową wartość 'nie przekłada renderu bo w tranzycji juz jest przelozony'
+  2) do 'useDeferredValue' powinniśmy przekazywać PRYMITYWNE wartość (string, number)
+      lub OBIEKTY utworzone poza RENDERINGIEM (jeśli przekazemy obiekt utworzony podczas rendereowania to wywołamy ZBĘDNE RERENDERY)
+  3) (kiedy otrzymuje nową wartość 'Object.is' [roznica między 'defferedStan', a 'stan']) -> kolejkuje w tle wykonanie RERENDERU
+      RERENDER w TLE jest PRZERYWALNY -> tylko ostatni RERENDER się wykona (np: przy wpisywaniu na klawiaturze)
+  4) Jest zintegrowany z <Suspense> (user widzi starą wartość podczas updatu UI)
+  5) nie zapobiega DODATKOWYM rządaniom HTTP
+  6) kiedy skończy się ORYGINALNY RERENDER -> react zaczyna RERENDER w TLE (background rerender) -> 
+      jakie kolwiek zmiany przerwą ten w tle i uruchomią go na nowo
+  7) NIE wywołuje EFFEKTOW (dopóki zmiany nie pojawią sie na EKRANIE)
+  */
+
+  const [query, setQuery] = useState(1);
+  // zmiany uzaleznionie od 'defferedQuery' mają mniejszy priorytet i będą wykonane podczas RERENDERU w TLE
+  // Komponent RENDERUJE się 2 razy
+  // 1) zmiana 'query' np: na 2 GDZIE defferedQuery = 1 (POPRZEDNIA WARTOŚĆ 'query')
+  // 2) W TLE zmian 'defferedQuery' = 2
+  // w INIT RENDER 'defferedQuery' === 'query'
+  const defferedQuery = useDeferredValue(query);
+
+  console.log("");
+  console.log("ReactHooksDefferedValue QUERY = ", query);
+  console.log("ReactHooksDefferedValue defferedQuery = ", defferedQuery);
+  // najpierw 2 i 1
+  // potem 2 i 2 itp...
+
+  return (
+    <>
+      <button
+        onClick={() => {
+          setQuery((prev) => {
+            return prev + 1;
+          });
+        }}
+      >
+        ZMIEŃ QUERRY
+      </button>
+      <p>QUERY = {query}</p>
+      <p>{query !== defferedQuery ? "Ładuje... " : null}</p>
+      {/* W tym przypadku słuzy jako OPTYMALIZACJA dla ładowania bardzo duzego komponentu */}
+      <ReactHooksDefferedValueChild isDefered={true} query={defferedQuery} />
+    </>
+  );
+}
+
+// dzięki opakowaniu w memo komponent ten sie nie rerenderuje na zmianę w query
+// dopiero gdy zmieni się z czasem w TLE deferedQuery
+const ReactHooksDefferedValueChild = memo(
+  function ReactHooksDefferedValueChild({ isDefered, query }) {
+    const limit = 1000000000;
+    let i = 1;
+    while (i < limit) {
+      i++;
+    }
+
+    return (
+      <p>
+        {isDefered ? "DEFFERED_QUERY" : "QUERRY"} = {query}
+      </p>
+    );
+  }
+);
+
 // #################################
-// ####
+// #### useEffect
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
 // #################################
