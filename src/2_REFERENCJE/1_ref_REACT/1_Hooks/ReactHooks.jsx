@@ -26,8 +26,10 @@ function ReactHooks() {
       */}
       {/* ##### CODZIENNE UŻYCIE */}
       <ReactHooksCallback />
+      <ReactHooksMemo />
       <ReactHooksContext />
       <ReactHooksDefferedValue />
+
       {/* ##### CODZIENNE UŻYCIE + TYLKO CLIENT SIDE */}
       <ReactHooksEffect />
       <ReactHooksLayoutEffect />
@@ -399,7 +401,7 @@ function ReactHooksInsertionEffect() {
 
   useInsertionEffect(setup, dependencies?)
   // setup -> funkcja z logiką effektu
-  // dependencies -> [OPCJONALNE] TABLICA ZALEZNOŚCI (reaktywne wartości, których zmiany maja wywołać HOOK ponownie)
+  // dependencies -> TABLICA ZALEZNOŚCI (reaktywne wartości, których zmiany maja wywołać HOOK ponownie)
 
   UWAGI!!!
   - TYLKO CLIENT-SIDE
@@ -430,7 +432,7 @@ function ReactHooksLayoutEffect() {
 
   useLayoutEffect(setup, dependencies?)
     // setup -> funkcja z logiką effektu
-    // dependencies -> [OPCJONALNE] TABLICA ZALEZNOŚCI (reaktywne wartości, których zmiany maja wywołać HOOK ponownie)
+    // dependencies -> TABLICA ZALEZNOŚCI (reaktywne wartości, których zmiany maja wywołać HOOK ponownie)
   
   UWAGA!!! useLayoutEffect -> MOZE POGORSZYĆ PERFORMANCE APLIKACJI
 
@@ -470,8 +472,63 @@ function ReactHooksLayoutEffect() {
 }
 
 // #################################
-// ####
+// #### useMemo | CACHOWANIE wartości na podstawie TABLICY ZALEZNOŚCI (stablina referencja)
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactHooksMemo() {
+  /*
+  const cachedValue = useMemo(calculateValue, dependencies)
+  // calculateValue -> funkcja, która zwraca wartość, która zostanie ZCACHOWANA (stabilna referencja przy RERENDERACH)
+  // dependencies -> TABLICA ZALEZNOŚCI (reaktywne wartości, których zmiany maja wywołać HOOK ponownie)
+
+  ZASTOSOWANIE !!!:
+  - POMIJANIE DROGICH OBLICZEŃ (czasochłonne Expansive calculations) 
+          console.time('filter array');
+          console.timeEnd('filter array');    // to co jest powyzej 1ms MOZNA nazwać jako DROGA KALKULACJA
+  - POMIJANIE ZBĘDNYCH RERENDEROWAŃ -> gdy przekazujemy OBIEKT/TABLICE/FUNKCJE jako 'props'
+  - MEMOIZATION (zapamietywania wartość/referencji zaleznie od innej wartości) DLA INNCYH HOOKOW [zwłaszcza OBIEKTOW i FUNKCJI]
+      pozwala na nie wywołanie hook, wtedy kiedy nie trzeba [brak zmian w tablicach zalezności]
+  - MEMOIZATION FUNKCJI (w tym celu dedykowany jest 'useCallback' -> który jest odmianą 'useMemo' bo use Memo musi robic HOF highr order function, a useCallback przyjmuje funkcję jako argument)
+
+  ZASTRZEZENIA:
+  - w <StrictMode> wywołuje się 2 razy
+  - przy init renderze -> zawsze się wywoła (niezaleznie od TABLICY ZALEZNOŚCI)
+  
+  */
+  /*
+  SUPER jest do poprawy OPTYMALIZACJI, ale nie zawsze jest potrzbne. PRZESTRZEGAJMY ZASAD:
+    1) prop 'children' jest LEPSZE od opakowania komponentów wewnątrz (te z children się nie RERENDERUJĄ 
+        gdy stan komponentu się zmieni)
+    2) NIE WYNOŚMY stanu dalej niż do najbliższego wspólnego komponentu
+    3) LOGIKA RENDEROWANIE ma byc PURE
+    4) UNIKAĆ zbędnych EFFECTÓW 
+    5) UNIKAĆ ZBĘDNYCH ZALEŻNOŚCI w tablicach zależności
+  */
+
+  const cachedObj = useMemo(() => {
+    return {
+      name: "ABC",
+    };
+  }, []);
+
+  const cachedJSX = useMemo(() => {
+    return <span>JSX</span>;
+  }, []);
+
+  return (
+    <div>
+      <p>
+        useMemo = {cachedObj.name} | JSX = {cachedJSX}
+      </p>
+      <ReactHooksMemoChild obj={cachedObj} />
+    </div>
+  );
+}
+
+// POMIJANIE ZBĘDNYCH RERENDEROWAŃ -> aby pomijać CHILD KOMPONENT musi być opakowany w 'memo'
+const ReactHooksMemoChild = memo(function ReactHooksMemoChildInner({ obj }) {
+  return <p>{obj.name}</p>;
+});
 
 // #################################
 // ####
