@@ -6,6 +6,7 @@ import {
   useDebugValue,
   useDeferredValue,
   useEffect,
+  useId,
   useMemo,
   useState,
 } from "react";
@@ -27,6 +28,7 @@ function ReactHooks() {
 
       {/* ##### MNIEJ PRZYDATNE */}
       <ReactHooksDebugValue />
+      <ReactHooksId />
 
       {/* 
       ##########################
@@ -292,8 +294,42 @@ function ReactHooksEffect() {
 }
 
 // #################################
-// ####
+// #### useId | hook do genereowania unikalnego ID (do przkazywania do ATRYBUTOW Accesibility)
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactHooksId() {
+  /*
+  zwraca unikalne id (string)
+  UWAGA !!! Nigdy nie uzywać do oznaczania 'key' 
+
+  skoro jest to string to mozna go uzywac jako np: 'prefixu do aria-describedby'
+  np: `${id}-first-name`
+
+  działa z SERVER_SIDE
+  UWAGA !!! w serwer-side wymaga identycznej struktury DOM jaka bedzie w client-side
+
+  UWAGA jeśli w 1 aplikacji mamy 2-razy 'ROOT" to mozemy dla kazdego zdefiniowac inny poczatek z useId
+      const root1 = createRoot(document.getElementById('root1'), {
+        identifierPrefix: 'my-first-app-'
+      });
+      root1.render(<App />);
+
+      const root2 = createRoot(document.getElementById('root2'), {
+        identifierPrefix: 'my-second-app-'
+      });
+      root2.render(<App />);
+
+  */
+  const id = useId();
+  const id2 = useId();
+  return (
+    <>
+      <input type="password" aria-describedby={id} />
+      <p id={id}>useId Accesibility {id}</p>
+      <p>useId Accesibility {id2}</p>
+    </>
+  );
+}
 
 // #################################
 // ####
