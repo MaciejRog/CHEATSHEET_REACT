@@ -9,6 +9,7 @@ import {
   useEffect,
   useId,
   useImperativeHandle,
+  useInsertionEffect,
   useMemo,
   useRef,
   useState,
@@ -33,6 +34,9 @@ function ReactHooks() {
       <ReactHooksDebugValue />
       <ReactHooksId />
       <ReactHooksImperativeHandle />
+
+      {/* ##### ZASTOSOWANIE w 0.001 % PRZYPADKOW + TYLKO CLIENT SIDE */}
+      <ReactHooksInsertionEffect />
 
       {/* 
       ##########################
@@ -355,7 +359,7 @@ const ReactHooksImperativeHandleChild = forwardRef(
     useImperativeHandle(ref, createHandle, dependencies?) 
         ref -> ref dostarczone z 'forwardRef'
         createHandle -> funkcja, która tworzy obiekt, który zostanie przekazany do Rodzina, który dostarczył 'ref' z 'forwardRef'
-        dependencies -> TABLICA ZALEZNOŚCI (reaktywne wartości, które maja wywołać HOOK ponownie)
+        dependencies -> [OPCJONALNE] TABLICA ZALEZNOŚCI (reaktywne wartości, których zmiany maja wywołać HOOK ponownie)
   */
     const inputRef = useRef();
     useImperativeHandle(
@@ -383,8 +387,34 @@ const ReactHooksImperativeHandleChild = forwardRef(
 );
 
 // #################################
-// ####
+// #### useInsertionEffect | TYLKO DLA BIBLIOTEK CSS w JS (poza tym nie ma zastosowania)
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactHooksInsertionEffect() {
+  /*
+  pozwala WSTRZYKIWAĆ style ZANIM effekty ustalające LAYOUT się odpalą
+  DOKłaDNIEJ pozwala DODAWAĆ 'DOM' zanim odpalą się EFFEKTY 'layout'
+
+  useInsertionEffect(setup, dependencies?)
+  // setup -> funkcja z logiką effektu
+  // dependencies -> [OPCJONALNE] TABLICA ZALEZNOŚCI (reaktywne wartości, których zmiany maja wywołać HOOK ponownie)
+
+  UWAGI!!!
+  - TYLKO CLIENT-SIDE
+  - Nie mozna aktualizować 'state' z wewnątrz tego hooka
+  - w chwili wykonywnia hook 'ref' NIE SA jeszcze PODŁACZONE 
+  - przeplata funkcję 'CLEANUP' i 'setup' uruchamia je jednocześnie (inne efekty -> najpierw czyszczenie potem setup effektu)
+  */
+
+  useInsertionEffect(() => {
+    // BRAK INFO...
+
+    // zwraca CLEANUP function (uruchamia się przy kazdym rerenderingu)
+    return () => {};
+  }, []);
+
+  return <></>;
+}
 
 // #################################
 // ####
