@@ -10,6 +10,7 @@ import {
   useId,
   useImperativeHandle,
   useInsertionEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -29,6 +30,7 @@ function ReactHooks() {
       <ReactHooksDefferedValue />
       {/* ##### CODZIENNE UŻYCIE + TYLKO CLIENT SIDE */}
       <ReactHooksEffect />
+      <ReactHooksLayoutEffect />
 
       {/* ##### MNIEJ PRZYDATNE */}
       <ReactHooksDebugValue />
@@ -415,6 +417,69 @@ function ReactHooksInsertionEffect() {
 
   return <></>;
 }
+
+// #################################
+// #### useLayoutEffect | WERJSA 'useEffect', KTORA URUCHAMIA SIĘ ZANIM EKREN SIE NARYSUJE PONOWNIE
+// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactHooksLayoutEffect() {
+  /*
+  WERJSA 'useEffect', KTORA URUCHAMIA SIĘ ZANIM EKREN SIE NARYSUJE PONOWNIE (BEFORE SCREEN REPAINTS)
+  STOSOWANY DO POMIERZENIA WYMIAROW elementów !!!! np: dzięki 'getBoundingClientRect'
+  LAYOUT -> połozenie i  wymiary elementów
+
+  useLayoutEffect(setup, dependencies?)
+    // setup -> funkcja z logiką effektu
+    // dependencies -> [OPCJONALNE] TABLICA ZALEZNOŚCI (reaktywne wartości, których zmiany maja wywołać HOOK ponownie)
+  
+  UWAGA!!! useLayoutEffect -> MOZE POGORSZYĆ PERFORMANCE APLIKACJI
+
+  ZASTRZEZENIA:
+    - w <strictMode> uruchomi się 2 razy na MOUNT
+    - tylko CLIENT SIDE (EFFEKTY zawsze sa tylko CLIENT_SIDE)
+
+  ZASTOSOWANIE:
+    - określenie wymiarów oraz połozenia elementów HTML (np: wysokość odległośc od prawej strony ekranu itp...)
+          (np: Tooltip -> jego wielkość i czy ma być na górze / z lewej / z prawej itp...) i dzięki 'useLayoutEffect'
+          USER nie zobaczy tego jak Tooltip się zmienia i jak się przemieszcza
+  
+  useLayoutEffect VS useEffect
+    - 'useLayoutEffect' BLOKUJE REPAINT EKREANU -> USER widzi efekt koncowy / 'useEffect' NIE BLOKUJE
+        wpływa to na wydajność eplikacji (KIEDY MOZNA NALEZY TEGO UNIKAĆ)
+  */
+
+  const ref = useRef();
+  const [height, setHeight] = useState("1");
+
+  useLayoutEffect(() => {
+    // UWAGA!!! KOD działający w 'setup' BLOKUJE REPAINTING EKRANU (dlatego moze wpływać na wydajność aplikacji)
+    //          tyczy się to równiez ustawianiu STANU
+    setHeight(ref.current.getBoundingClientRect().height);
+
+    // CLEAN_UP
+    return () => {
+      setHeight("");
+    };
+  }, []);
+
+  return (
+    <p ref={ref} style={{ height: "111px" }}>
+      useLayoutEffect WYSOKOŚĆ = {height}
+    </p>
+  );
+}
+
+// #################################
+// ####
+// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+// #################################
+// ####
+// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+// #################################
+// ####
+// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
 // #################################
 // ####
