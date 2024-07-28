@@ -1,5 +1,6 @@
 import {
   createContext,
+  forwardRef,
   memo,
   useCallback,
   useContext,
@@ -7,7 +8,9 @@ import {
   useDeferredValue,
   useEffect,
   useId,
+  useImperativeHandle,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -29,6 +32,7 @@ function ReactHooks() {
       {/* ##### MNIEJ PRZYDATNE */}
       <ReactHooksDebugValue />
       <ReactHooksId />
+      <ReactHooksImperativeHandle />
 
       {/* 
       ##########################
@@ -332,8 +336,51 @@ function ReactHooksId() {
 }
 
 // #################################
-// ####
+// #### useImperativeHandle | POZWALA ustawić co ma być w 'ref' z 'useRef'
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactHooksImperativeHandle() {
+  const ref = useRef();
+  return (
+    <>
+      <ReactHooksImperativeHandleChild ref={ref} />
+    </>
+  );
+}
+
+const ReactHooksImperativeHandleChild = forwardRef(
+  function ReactHooksImperativeHandleChildInner(props, ref) {
+    /*
+    POZWALA dostosować jakie ref (ogólnie jaki obiekt) zostanie przekazany do rodzica przez 'forwardRef'
+    useImperativeHandle(ref, createHandle, dependencies?) 
+        ref -> ref dostarczone z 'forwardRef'
+        createHandle -> funkcja, która tworzy obiekt, który zostanie przekazany do Rodzina, który dostarczył 'ref' z 'forwardRef'
+        dependencies -> TABLICA ZALEZNOŚCI (reaktywne wartości, które maja wywołać HOOK ponownie)
+  */
+    const inputRef = useRef();
+    useImperativeHandle(
+      ref,
+      () => {
+        // OKRESLAMY jakie 'pola' i 'funkcje' mają być wystawione dla RODZICA (reszta nie będzie)
+        return {
+          focus() {
+            inputRef.current.focus();
+          },
+          scrollIntoView() {
+            inputRef.current.scrollIntoView();
+          },
+        };
+      },
+      []
+    );
+
+    return (
+      <p {...props} ref={inputRef}>
+        useImperativeHandle
+      </p>
+    );
+  }
+);
 
 // #################################
 // ####
