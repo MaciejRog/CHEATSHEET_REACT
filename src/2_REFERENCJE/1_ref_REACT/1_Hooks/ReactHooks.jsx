@@ -49,6 +49,8 @@ function ReactHooks() {
       */}
       {/* ##### SERVER SIDE && CLIENT SIDE */}
       <ReactHooksActionState />
+
+      <ReactHooksOptimistic />
     </div>
   );
 }
@@ -590,8 +592,29 @@ function ReactHooksActionState() {
 }
 
 // #################################
-// ####
+// #### useOptimistic | AKTUALIZUJE UI w sposób OPTYMISTYCZNY
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactHooksOptimistic() {
+  /*
+  pokazuje INNY STAN gdy ASYNCHRONICZNA akcja się dzieje
+  przujmuje stan i zwraca jego kopię (która moze się róznić gdy dzieje się asynchroniczna operacja np: HTTP REQUEST)
+  NATYCHMIAST prezentuje USEROWIE wynik MIMO IŻ AKCJA TRWA (pokazuje to co chcemy aby user zobaczył jako wynik poprawnej operacji ASYNC)
+
+  const [optimisticState, addOptimistic] = useOptimistic(state, updateFn);
+      -) state -> wartość do zwrócenie na INIT i gdy AKCJA trwa 
+      -) updateFn -> funkcja (obecny STAN, optymistycznaWartość) zwraca optymistycznySTAN [musi być PURE]
+            (currentState, optimisticValue) => {
+              // merge and return new state
+              // with optimistic value
+            }
+      -) optimisticState -> stan zwracany przez HOOK
+      -) addOptimistic -> funkcja  (optimisticValue) => {}
+  
+      np: formularz (w tle zaraz poleci HTTP), ale pokazujemy USEROWI, ze juz się wysyła (SENDING)
+  */
+  return <></>;
+}
 
 // #################################
 // ####
