@@ -12,6 +12,7 @@ import {
   useInsertionEffect,
   useLayoutEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
 } from "react";
@@ -29,6 +30,7 @@ function ReactHooks() {
       <ReactHooksMemo />
       <ReactHooksContext />
       <ReactHooksDefferedValue />
+      <ReactHooksReducer />
 
       {/* ##### CODZIENNE UŻYCIE + TYLKO CLIENT SIDE */}
       <ReactHooksEffect />
@@ -533,8 +535,74 @@ const ReactHooksMemoChild = memo(function ReactHooksMemoChildInner({ obj }) {
 });
 
 // #################################
-// ####
+// #### useReducer | zaawansowane zarządzanie STANEM (bardziej zaawansowany useState)
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+const initReducerState = { name: "Aga" };
+
+// WYGONIE JEST WYODRĘBNIĆ AKCJE
+const REDUCER_ACTIONS = {
+  SET_NAME: "setName",
+  RESET: "reset",
+};
+
+function reducer(state, action) {
+  switch (action.type) {
+    case REDUCER_ACTIONS.SET_NAME:
+      // NIE MODYFIKUJEMY STANU tylko zwracamy NOWY :)
+      return {
+        ...state,
+        name: action.payload,
+      };
+    case REDUCER_ACTIONS.RESET:
+      return initReducerState;
+    default:
+      throw new Error("Unknown action");
+  }
+}
+
+function ReactHooksReducer() {
+  /*
+  const [state, dispatch] = useReducer(reducer, initialArg, init?)
+    -) state -> STAN
+    -) dispatch -> FUNKCJA do URUCHAMIANIA AKCJI (obiekt o budowie {type: string, payload?: any(optional)})
+    -) reducer -> FUNKCJA do obsługi AKCJI [AKTUALIZACJI STANU]  function reducer(state, action) { ...zwraca nowy stan}
+    -) initialArg -> POCZATKOWA WARTOŚĆ STANU (zawsze niech to będzie sama wartość -> nigdy wywołanie funkcji ,
+           bo przy kazdym rerenderze się wykona, a nie musi [moze pogorszyć performance] jeśli mysi byc FUNC to jako 3 argument)
+    -) init (OPCJONALNY) -> FUNCKJA (która zwraca stan początkowy), gdy jest obecna nadpisuje 'initialArg'
+  
+  ZASTRZEZENIA:
+    - w <strictMode> wywoła się 2 razy
+    - aktualizacja STANU jest BATCHowana (rerender komponenty dopiero gdy wszystkie SETTERY STANU się wykonają)
+            mozna to zmienić poprzez dostęp do DOM przez 'flushSync'
+      
+  
+  */
+  const [state, dispatch] = useReducer(reducer, initReducerState);
+  const [stanTest] = useReducer(reducer, "", () => {
+    // super miejsce do pobrania INIT WARTOŚCI np: z localStorage
+    return "MAMA";
+  });
+
+  function handleClick() {
+    if (state.name === "Aga") {
+      dispatch({
+        type: REDUCER_ACTIONS.SET_NAME,
+        payload: "Aguś",
+      });
+    } else {
+      dispatch({
+        type: REDUCER_ACTIONS.RESET,
+      });
+    }
+  }
+
+  return (
+    <p onClick={handleClick}>
+      (click change) REDUCER name = {state.name} | STAN_TEST = {stanTest}
+    </p>
+  );
+}
 
 // #################################
 // ####
