@@ -26,6 +26,7 @@ function ReactHooks() {
       VVVVVVVVVVVVVVVVVVVVVVVVVV
       */}
       {/* ##### CODZIENNE UŻYCIE */}
+      <ReactHooksState />
       <ReactHooksCallback />
       <ReactHooksMemo />
       <ReactHooksContext />
@@ -681,8 +682,52 @@ const ReactHooksRefChild = forwardRef(function ReactHooksRefChildInner(
 });
 
 // #################################
-// ####
+// #### useState | pamięc komponent (zmiana wywoła rerender)
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactHooksState() {
+  /*
+  UWAGA!!! DOKŁADNIE opisany w '1_TEMATY' '2_Interaktywność'
+
+  const [state, setState] = useState(initialState)
+    -) state -> STAN (jego zmiana powoduje RERENDER)
+    -) setState -> funkcja do zmiany stanu (Stabilna referencja )
+    -) initialState -> WARTOŚC lub FUNCKJA zwracająca wartośc POCZAtkową
+
+  ZASTRZEZENIA:
+    -) w <StrictMode> wywoła się 2 razy
+
+  Do resetowania stanu (zmieńmy 'key' atrybut komponentu (wtedy stan będzie od INIT))
+  */
+
+  const [stan, setStan] = useState("Aga");
+  const [stan2] = useState(() => {
+    //np: localStore (funkcja musi być PURE)
+    // uwaga taka funkcja wpłynie na wydajnośc mimo iz stan ustawi tylko na INIT
+    // to i tak wywoła się na kazdy rerender
+    return 28;
+  });
+
+  function handleClick() {
+    setStan("Aguś");
+    setStan((prevStan) => {
+      // NIGDY do samego 'stan' (nie jest mutable)
+      // jak jest OBIEKT i TABLICA (zawsze zwracać nowy obiekt /tablicę) NIE MUTOWAĆ
+      return prevStan + "1";
+    });
+    setStan((prevStan) => {
+      return prevStan + "2";
+    });
+
+    // wszystkie 3 się BATCHUJA i będzie 'Aguś12'
+  }
+
+  return (
+    <p onClick={handleClick}>
+      (click) STAN = {stan} | STAN 2 = {stan2}
+    </p>
+  );
+}
 
 // #################################
 // ####
