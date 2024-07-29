@@ -31,6 +31,7 @@ function ReactHooks() {
       <ReactHooksContext />
       <ReactHooksDefferedValue />
       <ReactHooksReducer />
+      <ReactHooksRef />
 
       {/* ##### CODZIENNE UŻYCIE + TYLKO CLIENT SIDE */}
       <ReactHooksEffect />
@@ -605,6 +606,85 @@ function ReactHooksReducer() {
 }
 
 // #################################
+// #### useRef | śmietniczek na wszystko (zachowuje wartość między rerenderem ale go nie powoduje) REF do DOM, timeout, interval itp..
+// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactHooksRef() {
+  /*
+  const ref = useRef(initialValue)
+
+  do 'ref.current' mozemy zapisać co tylko chcemy [MUTABLE] (stabilna referencja w kazdym rerenderze, ale zmiana nie wywołuje rerenderu )
+  
+  ZASTRZEZENIA:
+    - <strictMode> wywoła go 2 razy
+    - do ref.current (zapisuje [poza initem] w EventachHenderlsach lub Effectach) UNIKAMY fazy RENDEROWANIA 
+
+  UWAGA !!! wartośc inicjalna mimo iz jest wykorzystywana tylko przy INIT RENDERZE to odziałowuje na performance jesli jest to np:
+      konstruktor klasy (jak jest to droga operacja lepiej zrobić to inaczej)
+
+        const playerRef = useRef(null);
+        if (playerRef.current === null) {             // sprawdzając czy ref nie posaida juz wartości
+          playerRef.current = new VideoPlayer();
+        }
+      
+      LUB przez GETTER
+
+        const playerRef = useRef(null);
+        function getPlayer() {
+          if (playerRef.current !== null) {
+            return playerRef.current;
+          }
+          const player = new VideoPlayer();
+          playerRef.current = player;
+          return player;
+        }
+
+  UWAGA!!! aby przekazać 'ref' do komponentu. To komponent musimy opakować w 'forwardRef'
+  */
+
+  const domRef = useRef(null);
+  const timeRef = useRef(null);
+  const componentRef = useRef(null);
+
+  useEffect(() => {
+    timeRef.current = setTimeout(() => {
+      console.warn("REF CURRENT = ", domRef.current);
+      console.warn(
+        "REF CURRENT getBoundingClientRect = ",
+        domRef.current.getBoundingClientRect()
+      );
+      console.warn("componentRef = ", componentRef.current);
+    }, 2000);
+    return () => {
+      clearTimeout(timeRef.current);
+    };
+  }, []);
+
+  return (
+    <div>
+      <p ref={domRef}>p DOM REF</p>
+      <ReactHooksRefChild ref={componentRef} />
+    </div>
+  );
+}
+
+// komponent opakowany w 'forwardRef' przyjme 'ref' jako 2 argument (1 - to 'props')
+const ReactHooksRefChild = forwardRef(function ReactHooksRefChildInner(
+  props,
+  ref
+) {
+  return (
+    <span {...props} ref={ref}>
+      REF CHILD
+    </span>
+  );
+});
+
+// #################################
+// ####
+// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+// #################################
 // ####
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
@@ -683,14 +763,6 @@ function ReactHooksOptimistic() {
   */
   return <></>;
 }
-
-// #################################
-// ####
-// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-
-// #################################
-// ####
-// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
 // #################################
 // ####
