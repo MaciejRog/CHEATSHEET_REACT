@@ -16,6 +16,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  useTransition,
 } from "react";
 
 function ReactHooks() {
@@ -34,6 +35,7 @@ function ReactHooks() {
       <ReactHooksDefferedValue />
       <ReactHooksReducer />
       <ReactHooksRef />
+      <ReactHooksTransition />
 
       {/* ##### CODZIENNE UŻYCIE + TYLKO CLIENT SIDE */}
       <ReactHooksEffect />
@@ -786,8 +788,110 @@ function ReactHooksSyncExternalStore() {
 }
 
 // #################################
-// ####
+// #### useTransition | pozwala aktualizować STAN bez blokowania UI
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactHooksTransition() {
+  /*
+  const [isPending, startTransition] = useTransition()
+
+  //    isPending -> flaga informująca czy jest trwająca tranzycja
+  //    startTransition -> Funkcja, która pozwala oznaczyć zmianę jako tranzycję [przyjmuje 1 arument funkcję, w której updatujemy stany]
+
+  TRANYSCJE POMAGAJA nie wpadać w niechciany <Suspance> [oznaczone nimi zmiany go nie wywołają]
+
+  ZASTRZEZENIA:
+    - jeśli musimy wywołac tranzycję z innego miejsca zastosujmy (startTransition [ale z poza useTransition (PROSTO z REACT)])
+          działa tak samo tylko nie ma 'isPending'
+    - zadziała gdy wywołujemy settery stanu (dla CUSTOM_HOOK i PROPS stosować 'useDefferedValue')
+    - update STANU oznaczonego jako 'TRANZYCJA' będzie PRZERWANY przez inne UPDATY STANU i ponownie wywołany 
+          np: GRAF jako Tranzycja to gdy zaczniemy wpisywać w input to przerwie update grafu, zaktualizuje input state i wroci do grafu
+    - WIELE TRANZYCJI jest batchowanych razem (doiero zmiana wszystkich wywoła rerender)[ZAPEWNE ZOSTANIE USUNIETE Z CZASEM]
+
+    - NIE OPAKOWYWAĆ AKTUALIZACJI CONTROLOWANYCH POL formualrza w TRANZYCJE (setInput1 -> to nie w tranzycji)
+    - nie wywoływać timeoutów/intervałów w startTransition (wtedy nie działa)
+          zamiast tego opakować startTransition w timeoutów/intervałów !!!
+    - wywołuje się natychmiast  (ponizej będzie '1''2''3') -> tylko SETY STANOW są Oznaczone jako TRANISTION 
+              console.log(1);
+              startTransition(() => {
+                console.log(2);
+                setPage('/about');
+              });
+              console.log(3);
+
+  EKSPERYMENTALNE - pokazywanie błędu jeśli funkcja w 'startTransition' zwróci błąd
+    <ErrorBoundry fallback={<p>Bład w tranzycji</p>}>
+      <ComponentZuseTransition/>
+    </ErrorBoundry>
+  */
+
+  const [input1, setInput1] = useState("");
+  const [input2, setInput2] = useState("");
+  const [tab, setTab] = useState("111");
+  const [isPending, startTransition] = useTransition();
+
+  return (
+    <div>
+      <p>TAB = {tab}</p>
+      <button
+        onClick={() => {
+          console.log("@@ RESET WYWOŁANY");
+          setTab("111");
+          setInput1("");
+          setInput2("");
+        }}
+      >
+        RESET
+      </button>
+      <p>
+        <label>
+          TRANZYCJA
+          <input
+            onChange={(e) => {
+              const value = e.target.value;
+              setInput1(value);
+
+              // ZMIANY W TYM NIE BLOKUJA przycisku RESET [NIE BLOKUJA UI]
+              startTransition(() => {
+                setTab((prev) => prev + value);
+              });
+            }}
+            value={input1}
+          ></input>
+        </label>
+      </p>
+      <p>
+        <label>
+          BEZ TRANZYCJI
+          <input
+            onChange={(e) => {
+              setInput2(e.target.value);
+
+              // ZMIANY W TYM BLOKUJA przycisk RESET dopóki CHILD sie nie wyrenderuje
+              setTab((prev) => prev + e.target.value);
+            }}
+            value={input2}
+          ></input>
+        </label>
+      </p>
+      <span>{isPending ? "Trwająca tranzycja" : "Brak tranzycji"}</span>
+      <ReactHooksTransitionChild tab={tab} />
+    </div>
+  );
+}
+
+const ReactHooksTransitionChild = memo(function ReactHooksTransitionChildInner({
+  tab,
+}) {
+  if (tab !== "111") {
+    let i = 0;
+    while (i < 1000000000) {
+      i++;
+    }
+  }
+
+  return <p>DŁUGOŚĆ TABLICY{tab.length}</p>;
+});
 
 // #################################
 // ####
