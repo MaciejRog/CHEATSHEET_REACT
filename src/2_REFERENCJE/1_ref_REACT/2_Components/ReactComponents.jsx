@@ -1,9 +1,10 @@
-import { Fragment } from "react";
+import { Fragment, Profiler } from "react";
 
 function ReactComponents() {
   return (
     <div>
       <ReactComponentsFragment />
+      <ReactComponentsProfile />
     </div>
   );
 }
@@ -62,9 +63,46 @@ function ReactComponentsFragmentChild() {
 }
 
 // #################################
-// ####
+// #### <Profiler> | miezy wydajność DRZEWA REACTA
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
+function ReactComponentsProfile() {
+  /*
+  domyślnie wyłączony na produkcji
+
+  ODPOWIEDNIK 'React Develop Tolls' (dodatek do przeglądarki)
+
+  // Mozna miec bardzo wiele <Profiler> mogą tez być zagniezdzone
+
+  -- nie naduzywać i stosować wtedy kiedy trzeba 
+  */
+
+  function handleRender(
+    id, // identyfikuje <Profiler id="wydajnosc"
+    phase, // 'mount' 'update' 'nested-update'
+    actualDuration, // [ms] czas na render <Profiler> i jego dzieci | określa jak dobrze działa 'memo' i 'useMemo'
+    //                      przy RERENDERACH powinno być ZNACZNIE mniejsze niz przy MOUNT (i wywołane na zmiany props)
+    baseDuration, // [ms] czas szacowany ile bedzie sie rerenderował <Profiler> i jego dzieci  BEZ OPTYMALIZACJI
+    //                      idealne by porównać z 'actualDuration' by sprawdzić czy optymalizacja działa
+    startTime, // [ms] -> od którego stamu czasu sie zaczął render
+    commitTime // [ms] -> do którego stamu czasu się zakończył render
+  ) {
+    console.log(
+      `ReactComponentsProfile | id=${id} | phase=${phase} | actualDuration=${actualDuration} | baseDuration=${baseDuration} | startTime=${startTime} | commitTime=${commitTime}`
+    );
+  }
+  return (
+    // id -> identyfikuje jaką cześć aplikacji obliczamy
+    // onRender -> funkcja która wykona sie za kazdym razem gdy zaktualizuje sie DRZEWO (zagniezdzone w <Profiler> komponenty)
+    <Profiler id="wydajnosc" onRender={handleRender}>
+      <ReactComponentsProfileChild />
+    </Profiler>
+  );
+}
+
+function ReactComponentsProfileChild() {
+  return <p>ABC</p>;
+}
 // #################################
 // ####
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
