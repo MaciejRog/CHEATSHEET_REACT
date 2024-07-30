@@ -15,6 +15,7 @@ import {
   useReducer,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 
 function ReactHooks() {
@@ -42,6 +43,7 @@ function ReactHooks() {
       <ReactHooksDebugValue />
       <ReactHooksId />
       <ReactHooksImperativeHandle />
+      <ReactHooksSyncExternalStore />
 
       {/* ##### ZASTOSOWANIE w 0.001 % PRZYPADKOW + TYLKO CLIENT SIDE */}
       <ReactHooksInsertionEffect />
@@ -730,8 +732,58 @@ function ReactHooksState() {
 }
 
 // #################################
-// ####
+// #### useSyncExternalStore | Hooks pozwala się ZASUBSKRYBOWAĆ do zewnetrzego STORE (śródło danych)
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function subscribe(callback) {
+  window.addEventListener("online", callback);
+  window.addEventListener("offline", callback);
+  return () => {
+    window.removeEventListener("online", callback);
+    window.removeEventListener("offline", callback);
+  };
+}
+
+function getSnapshot() {
+  return navigator.isOnline;
+}
+
+function getServerSnapshot() {
+  return true;
+}
+
+function ReactHooksSyncExternalStore() {
+  /*
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot?)
+
+  // snapshot -> migawka danych ze store w danym czasie
+  // subscribe -> FUNKCJA subskrybuje się do store i zwraca funkcję odsybskrybującą
+  // getSnapshot -> FUNKCJA do czytania danych ze store (to co potrzebujemy ze store)
+                    Jeśli te dane są inne (Object.is) to powoduje RERENDER komponentu
+  // getServerSnapshot -> [OPCJONALNE] FUNKCJA - zwraca inicjalną wartość danych ze store, (tylko podczas SERVER_SIDE)
+                  (wartość z tego zsostanie uzyta do wygenerowania plików HTML)
+                  (podczas HUDRATACJI [dodawanie interaktywności do wygenerowanych na serwerze HTML])
+
+  ZASTRZEZENIA:
+    - snapshot z getSnapshot ma być IMMUTABLE (tylko read-only)
+    - subscribe -> najlepiej deklarować poza komponentem
+    - mutacja STORE (NIE MOZE BYC oznaczone jako NON-BLOCKING TRANISTION) -> uruchomią najblizszy <Suspacse> 
+    - preferować uzywanie w ramach CUSTOM HOOK niz w KOMPONENCIE
+
+  ZRODLA DANYCH DO UZYWANIA Z TYM: (ZRODLA DANYCH napisane nie-ractowym kodem)
+    - blbioteki do zarządzania stanem
+    - API PRZEGLADARKI np: navigator.isOnline
+
+
+  */
+
+  const isOnline = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getServerSnapshot
+  );
+  return <p>{isOnline ? "JEST_ONLINE :)" : "JEŚTEŚMY_OFFLINE ;("}</p>;
+}
 
 // #################################
 // ####
