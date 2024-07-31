@@ -1,4 +1,4 @@
-import { Fragment, Profiler, StrictMode } from "react";
+import { Fragment, lazy, Profiler, StrictMode, Suspense } from "react";
 
 function ReactComponents() {
   return (
@@ -6,6 +6,7 @@ function ReactComponents() {
       <ReactComponentsFragment />
       <ReactComponentsProfile />
       <ReactComponentsStrictMode />
+      <ReactComponentsSuspense />
     </div>
   );
 }
@@ -142,8 +143,129 @@ function ReactComponentsStrictModeChild() {
 }
 
 // #################################
-// ####
+// #### <Suspense>  | pozwala wyświetlić inny kod JSX, podczas ładowania komponentu dziecka (props.children dla <Suspense>)
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+// lazy -> pozwala ładować LENIWIE [lazy] (nie zachłanie [eager]) komponenty (umówione dokładnie dalej)
+const enableImport = true;
+const ReactComponentsSuspenseChild = lazy(() => {
+  const promise = new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (enableImport) {
+        resolve(import("./ReactComponentsSuspenseChild"));
+      } else {
+        reject();
+      }
+    }, 3000);
+  });
+
+  return promise;
+});
+const ReactComponentsSuspenseChild2 = lazy(() => {
+  const promise = new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (enableImport) {
+        resolve(import("./ReactComponentsSuspenseChild"));
+      } else {
+        reject();
+      }
+    }, 8000);
+  });
+
+  return promise;
+});
+
+function ReactComponentsSuspense() {
+  /*
+  pozwala wyświetlić inny kod JSX, podczas ładowania komponentu dziecka (props.children dla <Suspense>)
+  props.children -> inaczej jako CONTENT TREE -> JSX między tagami 
+          <Suspense fallback={<></>}>
+            // props.children | CONTENT TREE
+          </Suspense>
+  props.children musi się zawieścić (suspends) podczas renderowania -> wtedy wyrenderuje się JSX z atrybutu 'fallback' 
+
+  fallback może byc: [najlepiej lekki JSX np: LoadingSpinner, Skieleton]
+    - JSX | fallback={<p>Ładowanie</p>}
+    - KOMPONENT | fallback={<ReactComponentsSuspenseFallback />}
+
+  UWAGA!!! aktywuje się 'fallback' z najbliższego <Suspense>
+  UWAGA!!! nawet jeśli tylko 1 CHILD się ładuje to wszystkie opakowane w <Suspense> się UKRYJĄ
+          i pokażą w tym samym czacie gdy zawieszony sie odwiesi
+          [pozwala sterować widocznością zależnych od siebie elementów]
+  UWAGA!!! 'fallback' wywoła się nawet gdy komponent który go wywoła jest bardzo głeboko w TREE
+            lub nawet w innym komponencie (obsługa do niego trafi)
+
+  ZASTRZEŻENIA:
+    - kiedy komponent się zawieśi (jego stan jest ZEROWANY -> trzewo budowane na NOWO)
+    - AKTUALIZACJE PRZEZ 'startTransition' (useTransition) LUB 'useDeferredValue' NIE WYWOŁAJĄ 'fallback'
+          Pomocne gdy jakieś updaty stanu MAJA GO NIE WYWOŁAĆ (dotyczy tylko <suspance> w który wpadają)
+    - jeśli zawiesi się wcześniej wyrenderowane DRZEWO, react wyczyście jego LAYOUT EFFECTY
+          kiedy CONTENT TREE będzie gotowe react wywoła LAYOUT EFFECTY ponownie
+    - react ma opytmalizację do tego (Streaming Server Rendering && Selective Hydration)
+
+  CO AKTYWUJE SUSPANSE:
+    - pobierania danych wewnątrz frameworków (Relay && Next.js)
+          sam z siebie tego nie wykrywa!!! (więc 'fetch' w EFFEKTACH czy EVENT HANDLERSACH nie wywoła tego)
+    - LAZY-LOADING poprzez 'lazy'
+    - czytanie wartości z PROMISE poprzez 'use'
+
+  UWAGA:
+    - nie opakowujmy każdego komponentu (dogadajmy z designerem gdzie ma być)
+    - (alternatywą jest 'useDeferredValue' oraz 'startTransition' 
+      PRZEPROWADZAJĄ UPDATY STANU nie blokujące UI | nie pokazują innych JSX'ow TYLKO JSX'y ze starymi wartościami stanu (w trakcie RERENDERU W TLE)
+
+      startTransition (useTransition) -> używane często we 'frameworkach' oraz 'router libraries'
+      useDeferredValue -> gdy chcemy określic zmiany jako 'nie nagłe'
+    )
+
+  SERVER_SIDE:
+    - obsługuje ERRORY (od komponentów) po stronie serwera! (zwróci jego 'fallback')
+        po stronie KLIENTA taki komponent spróbuje wyrenderować ponownie
+              <Suspense fallback={<Loading />}>
+                <Chat />
+              </Suspense>
+              function Chat() {
+                // pozwala zapobiec renderowaniu komponentu na serwerze
+                // na stronie klienta spróbuje ponownie ;)
+                if (typeof window === 'undefined') {      
+                  throw Error('Chat should only render on the client.');
+                }
+                // ...
+              }
+    - 
+  */
+  return (
+    <div>
+      <Suspense fallback={<ReactComponentsSuspenseFallback />}>
+        {/* 
+        przez 3s pokaże <ReactComponentsSuspenseFallback />
+        po tym 'lazy' załaduje <ReactComponentsSuspenseChild /> i go wyświetli
+         */}
+        <ReactComponentsSuspenseChild />
+        <p>TEN NIE CZEKA, ale i tak w 1 Suspense się ukryje </p>
+        <Suspense fallback={<ReactComponentsSuspenseFallback2 />}>
+          {/* na tego czekamy 5s dłużej niż na tego wyżej 
+          więc podczas ładowanie tego 
+              <ReactComponentsSuspenseChild />
+              <p>TEN NIE CZEKA</p>
+          są już widoczne
+          gdy ten się ładuje wywoła się (NAJBLIŻSZY 'fallback') <ReactComponentsSuspenseFallback2>
+            ale <ReactComponentsSuspenseFallback /> JUŻ NIE 
+        */}
+          <ReactComponentsSuspenseChild2 />
+        </Suspense>
+      </Suspense>
+    </div>
+  );
+}
+
+function ReactComponentsSuspenseFallback() {
+  return <div style={{ color: "#ff0000" }}>Trwa ładowanie dziecka</div>;
+}
+
+function ReactComponentsSuspenseFallback2() {
+  return <div style={{ color: "#00ff00" }}>Trwa ładowanie dziecka 2 !!!</div>;
+}
 
 // #################################
 // ####
