@@ -1,10 +1,11 @@
-import { Fragment, Profiler } from "react";
+import { Fragment, Profiler, StrictMode } from "react";
 
 function ReactComponents() {
   return (
     <div>
       <ReactComponentsFragment />
       <ReactComponentsProfile />
+      <ReactComponentsStrictMode />
     </div>
   );
 }
@@ -104,8 +105,41 @@ function ReactComponentsProfileChild() {
   return <p>ABC</p>;
 }
 // #################################
-// ####
+// #### <StrictMode> | pozwala na wyszukanie błędów w komponentach podczas DEVELOPMENTU
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactComponentsStrictMode() {
+  /*
+  pozwala na wyszukanie błędów w komponentach podczas DEVELOPMENTU
+  - dodaje funkcjonalności i ostrzezenia w czasie developmentu
+  
+  DODATKI:
+    - komponenty RERENDERUJA się 2 razy (znajduje błędy w 'IMPURE KOMPONENTACH' wszystkie powinny być 'PURE')
+          (PURY -> przy tym samych props, state, context [co powoduje rerender] zwracany jest taki sam JSX )
+          RENDERUJE 2 RAZY:
+            - ciało komponentu 
+            - settery (setStan, useMemo, useCallback, useReducer)
+            - metody komponentu (constructor, redner, shouldComponentUpdate itp..)
+    - wywoła EFEKTY 2 razy (znajduje błędy w brakujących CLEANUPACH)
+          NA PRODUKCJI JEST:
+            - MOUNT (setup)                 [przy <strictMode> tutaj wywoła się jeszcze 'cleanup' -> 'setup']
+            - RERENDER (cleanup -> setup)
+            - UNMOUNT (cleanup)
+    - react sprawdza czy komponenty nie korzystają z 'DEPRECATED API"
+  
+  Jak jest właczony (najlepiej opakować nim główny komponent, ale mozna tez tylko część aplikacji) to nie da się go wyłączyć
+  AUTOMATYCZNIE usuwany w produkcji
+  */
+  return (
+    <StrictMode>
+      <ReactComponentsStrictModeChild />
+    </StrictMode>
+  );
+}
+
+function ReactComponentsStrictModeChild() {
+  return <p>Strict Mode</p>;
+}
 
 // #################################
 // ####
