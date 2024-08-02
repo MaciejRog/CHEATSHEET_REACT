@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  forwardRef,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 function ReactAPI() {
   return (
@@ -231,7 +239,7 @@ const ObjectContext = createContext({ name: "" });
 
 function ReactAPICreateContext() {
   /*
-  PRZEPISANE Z REACT_HOOKS
+  PRZEPISANE Z  '2_REFERENCJE' '1_ref_REACT' '1_Hooks' 'useContext' 
 
   useContext -> pozwala na dostęp do kontekstu z dowolnego miejsca (brak konieczności PROP DRILLINGU)
   CZĘSTO ŁĄCZONY z 'useReducer'
@@ -278,12 +286,41 @@ function ReactHooksContextChild() {
 }
 
 // #################################
-// ####
+// #### forwardRef | pozwala na przekazanie 'ref' poprzez komponent do elementów (inny komponent lub tag), które on renderuje
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
 function ReactAPIForwardRef() {
-  return <div></div>;
+  /*
+  dokładnie opisane w '2_REFERENCJE' '1_ref_REACT' '1_Hooks' 'useRef'
+
+  Wazne opisane powyzej :   HOOK 'useImperativeHandle' -> pozwala na określenie co przekazemy do ref 
+  */
+
+  const componentRef = useRef(null);
+
+  return (
+    <div>
+      <ReactHooksRefChild ref={componentRef} />
+    </div>
+  );
 }
+
+// komponent opakowany w 'forwardRef' przyjme 'ref' jako 2 argument (1 - to 'props')
+// w <StrictMode> wywoła się 2 razy
+// ref moze być
+//    - obiektem
+//    - funkcją
+//    - domyślna wartość NULL
+const ReactHooksRefChild = forwardRef(function ReactHooksRefChildInner(
+  props,
+  ref
+) {
+  return (
+    <span {...props} ref={ref}>
+      REF CHILD
+    </span>
+  );
+});
 
 // #################################
 // ####
