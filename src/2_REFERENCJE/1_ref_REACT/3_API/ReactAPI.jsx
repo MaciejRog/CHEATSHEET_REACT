@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 function ReactAPI() {
   return (
@@ -222,11 +222,59 @@ function ReactAPICache() {
 }
 
 // #################################
-// ####
+// #### createContext | do tworzenia contextu
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
+// tworzenie KONTEKSTU
+const MyContext = createContext("light");
+const ObjectContext = createContext({ name: "" });
+
 function ReactAPICreateContext() {
-  return <div></div>;
+  /*
+  PRZEPISANE Z REACT_HOOKS
+
+  useContext -> pozwala na dostęp do kontekstu z dowolnego miejsca (brak konieczności PROP DRILLINGU)
+  CZĘSTO ŁĄCZONY z 'useReducer'
+
+  GDY ZMIENIMY jego wartośc to REACT RERENDERUJE te komponenty, który używają 'useContext' z KONTEKSTEM, któremu zminilismy wartość
+  UWAGA!!! 'memo' nie zapobiegnie odtrzymaniu nowych wartości
+
+
+  ZASTOSOWANIE:
+    -) przekazywanie danych do zagnieżdżonych komponentów (zawsze z najblizszego PROVIDERA (jeśli nie ma to domyślna wartość))
+*/
+  const [object, setObject] = useState({ name: "Aga" });
+  const context = useContext(MyContext); // light
+
+  const stableObject = useMemo(() => {
+    return {
+      name: object.name,
+      setObject,
+    };
+  }, [object.name]);
+
+  return (
+    <>
+      <p>CONTEXT = {context}</p>
+      {/* MyContext.Provider -> od tego miejsca komponenty poniżej, odczytają wartośc kontextu jako 'dark' */}
+      <MyContext.Provider value="dark">
+        {/* Do wartość CONTEXTU zawsze warto przekazać STABILNA REFERENCJE do obiektu poprzez 'useMemo' */}
+        <ObjectContext.Provider value={stableObject}>
+          <ReactHooksContextChild />
+        </ObjectContext.Provider>
+      </MyContext.Provider>
+    </>
+  );
+}
+
+function ReactHooksContextChild() {
+  const context = useContext(MyContext); // dark
+  const objectContext = useContext(ObjectContext); // { name: "Aga" }
+  return (
+    <p>
+      CONTEXT CHILD = {context} {objectContext.name}
+    </p>
+  );
 }
 
 // #################################
