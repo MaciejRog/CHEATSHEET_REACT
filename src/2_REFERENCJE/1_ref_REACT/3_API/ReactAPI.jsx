@@ -4,13 +4,15 @@ function ReactAPI() {
   return (
     <div>
       <ReactAPIAct />
-      <ReactAPICache />
       <ReactAPICreateContext />
       <ReactAPIForwardRef />
       <ReactAPILazy />
       <ReactAPIMemo />
       <ReactAPIStartTransition />
       <ReactAPIUse />
+
+      {/* TYLKO SERVER-SIDE */}
+      <ReactAPICache />
     </div>
   );
 }
@@ -147,11 +149,76 @@ export function ReactAPIActChild() {
 }
 
 // #################################
-// ####
+// #### cache | SERVER SIDE cache
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
 function ReactAPICache() {
-  return <div></div>;
+  /*
+  const cacheFn = cache(fn);
+    // fn -> funkcja którą chcemy schachować (dowolna funkcja, dowolne argumenty, dowolny wynik)
+    // cacheFn -> RETURN funkcję, która ma funkcjonalność cachowania 
+                  (przy takich samych argumentach się nie wykona tylko poda zapisany wcześniej wynik)
+                      te same argumenty to [porównanie przez 'Object.is' jak TABLICE ZALEZNOŚCI]:
+                        - ich wartości
+                        - i referencje (obiekty często sie zmianiją przy kazdym renderze UWAZAĆ NA TO !!!)
+                                lepiej przekazać wartości obiektu osobno jako argumenty 1,2,3 ...
+                  jeśli nie było wcześniej takich argumentów to się wykona
+
+  cache ->:
+    -) tylko SERVER-SIDE
+    -) EKSPERYMENTALNE
+
+  zatrzezenia:
+    -) react uniewaznia 'cache' wszystkich funkcji przy kazdym RZADANIU do SERVERA
+    -) wywołanie 'cache' tworzy nową funkcję (dla kazdej jest osobny 'cache')
+    -) cachuje tez ERRORY
+    -) TYLKO SERVER-SIDE  (dopuszcza async/await rendering  [async function Komp(){ //...mozna wywołać 'await' //...  }])
+    -) Wywołanie TYLKO W KOMPONENCIE (poza komponentem nie działa) [w tle uzywa 'context']
+        DEKLARACJA NAJLEPIEJ POZA KOMPONENTEM (aby współdzielić)
+
+  ZASTOSOWANIE:
+    -) cięzkie obliczenia np: Fetch list itp...
+    -) PRELOAD DATA!!!
+          (jeśli 1 wowołanie się nie skończy to 2 grzecznie czeka az 1 się skończy i bierze od niego dane)
+
+          ### PRZYKŁAD 1
+          const fetchData = cache(fn);
+          function App(){
+            fetchData();        // bez przypisania zwracanych danych [wywoła fetch gdy dzieci się renderują ]
+            // ...
+          }
+          function Child(){
+            const data = fetchData();   // Tutaj juz uzyjemy danych (zostały schaczowane w <App>)
+            /...
+          }
+
+          ### PRZYKŁAD 2
+          async function MyComponent() {
+            getData();                          // 1
+            // ... some computational work  
+            await getData();                    // 2 z 'await'
+            // ...
+          }
+
+
+
+  cache VS useMemo VS memo    [wszystkie są do MEMOIZATIION | ale sa roznice (CO CaCHUJE | KTO MA DOSTEP DO CACHE | KIEDY CACHE JEST CZYSZCZONY)]
+  
+                      
+  - useMemo   |   client-side komponent && cache tylko dla ostatnich wartości w tablicy zalezności  (a nie dla kazdego wariantu)
+                  słuzy do zapamietania DROGICH i skomplikowanych operacji (oraz dla stabilnej referencji)
+                  [NIE CACHUJE ASYNCHRONICZNOSCI]
+                  współdzielenie tylko poprzez przekazanie przez 'props'
+
+  - memo      |   zapobiega Rerenderowie komponentów (gdy referencje i wartości props są niezmienne)
+                  cachuje tylko ostatni render przy ostatnich props (z ostatnimi props, a nie kazdy wariant)
+
+  - cache     |   server-side komponent && funckje które powinny być współdzielone wśród komponentów
+                  cachuje WSZYSTKIE zwrotki
+                  rowniez cachuje 'fetch' czyli ASYNCHRONICZNE FUNKCJE
+                  cache się czyści przy rządaniach do Servera
+  */
+  return <div>Cache</div>;
 }
 
 // #################################
