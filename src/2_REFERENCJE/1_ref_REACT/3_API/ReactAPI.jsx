@@ -1,6 +1,8 @@
 import {
   createContext,
   forwardRef,
+  lazy,
+  Suspense,
   useContext,
   useEffect,
   useMemo,
@@ -323,11 +325,97 @@ const ReactHooksRefChild = forwardRef(function ReactHooksRefChildInner(
 });
 
 // #################################
-// ####
+// #### lzay | pozwala opóźnić ładowanie kody do chwili do której nie wyrenderuje się po raz 1
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
+const enableImport = true;
+
+// bardziej zaawansowe uzycie lazy (doładowuje komponent dopiero po 3 sekundach)
+const ReactAPILazyChild1 = lazy(() => {
+  const promise = new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (enableImport) {
+        resolve(import("./ReactAPILazyChild1.jsx"));
+      } else {
+        reject();
+      }
+    }, 3000);
+  });
+
+  return promise;
+});
+
+// najprostrze zastosowanie 'lazy'
+// wymaga by 'ReactAPILazyChild2' miał 'default export'
+const ReactAPILazyChild2 = lazy(() => import("./ReactAPILazyChild2.jsx"));
+
 function ReactAPILazy() {
-  return <div></div>;
+  /*
+    pozwala opóźnić ładowanie kody do chwili do której nie wyrenderuje się po raz 1,
+    czyli np: komponenty których dana strona nie uzywa, ale inna uzywa 
+    LUB jak ponizej (kod komponentu 'ReactAPILazyChild2' doładuje się [zakładka 'network'])
+      dopiero gdy klikniemy przycisk 'Load child 2'
+      (na dzień dobry kod tego komponentu nie jest pobierany)
+      PRZYSPIESZA działanie aplikacji, bo eliminuje ilość kodu do pobrania na Dzień Dobry
+      i doczytuje go tylko wtedy gdy jest potrzebny
+
+    const SomeComponent = lazy(load);
+      // load ->  skrypt do ładowania komponentu z zewnętrznego zasobu 
+                  w zasadzie to przyjmuje 'Promise' (oraz 'thenable' -> to na czym mozna wywołać 'then') 
+                  wywoła się dopiero gdy będziemy chcili wyrenderować zmienną 'ReactAPILazyChild2'
+                  pod zmienną 'SomeComponent' zapisze to co zwróci 'resolve' z Promise
+                  po wywołaniu 'load' i jego wynik są 'CACHOWANE' -> wywoła się tylko 1 raz
+                  gdy będzie reject to wywoła najblizszy Error Boundry -> o tym później
+                        przykład jak w 'ReactAPILazyChild1'
+
+
+    Komponenty zaczytane z mechanizmem 'lazy' są 'Suspense'
+    czyli działa na nie mechanizm '<Suspense fallback={}>
+
+
+    ZASTRZEZENIA:
+      - deklarować POZA komponentem (nigdy wewnątrz)
+  */
+
+  const [showComponent, setShowComponent] = useState(false);
+
+  return (
+    <div>
+      <p>LAZY</p>
+      {/* dopóki się nie załaduje w lazy 'ReactAPILazyChild1' wyświetli sie fallback*/}
+      <Suspense fallback={<p style={{ color: "#00ff00" }}>Trwa ładowanie</p>}>
+        <ReactAPILazyChild1 />
+      </Suspense>
+      <div>
+        <p>
+          <button
+            onClick={() => {
+              setShowComponent((prev) => !prev);
+            }}
+          >
+            Load child 2
+          </button>
+        </p>
+        <div>
+          {/* dopóki się nie załaduje w lazy 'ReactAPILazyChild2' wyświetli sie fallback*/}
+          {/* BEZ TEGO <Suspense> React rzuci błędem  */}
+          {showComponent ? (
+            <Suspense
+              fallback={
+                <p style={{ color: "#00ff00" }}>
+                  Trwa ładowanie warunkowego komponentu
+                </p>
+              }
+            >
+              <ReactAPILazyChild2 />
+            </Suspense>
+          ) : (
+            <div style={{ color: "#00ff00" }}>Nie załadowany</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // #################################
