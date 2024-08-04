@@ -2,6 +2,7 @@ import {
   createContext,
   forwardRef,
   lazy,
+  memo,
   Suspense,
   useContext,
   useEffect,
@@ -419,12 +420,113 @@ function ReactAPILazy() {
 }
 
 // #################################
-// ####
+// #### memo | pozwala pomijać RERENDERING komponentu tak długo jak nie zmieni się WARTOŚĆ lub REFERENCJA któregoś z PROPS
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
+const objOutside = { id: 2 };
+
 function ReactAPIMemo() {
-  return <div></div>;
+  /*
+  pozwala pomijać RERENDERING komponentu tak długo jak nie zmieni się WARTOŚĆ lub REFERENCJA któregoś z PROPS
+      nie działa na zmianę STANU wewnątrz 'memo' komponentu | zmianę CONTEXTU | zmianę stanu w REDUCER
+      (mozna STAN i CONTEXT wynieść wyzej)
+  POPRAWIA PERFORMANCE aplikacji
+
+  const MemoizedComponent = memo(SomeComponent, arePropsEqual?)
+      -) SomeComponent | komponent, który chcemy ZMEMOIZOWAĆ (zapewnić ze rerenderuje go tylko zmiana props)
+      -) arePropsEqual [OPCJONALNE | funkcja do porównywania czy props się zmieniły !!!! (przyjmuje STARE_PORPS, NOWE_PROPS)
+                                     domyślnie bez tego React korzysta z 'Object.is'
+                                     UWAGA!!! trzeba porównać kazde 'props'
+                                     UWAGA!!! MOZE POGORSZYĆ PERFORMANCE (naawet gorszy niz RERENDER za kazdym razem)
+                    function memoPropsEqualFuncs(prevCompProps, newCompProps) {
+                      if (prevCompProps.obj1.id === newCompProps.obj1.id) {
+                        // jeśli zwróci 'true' -> STARE i NOWE props są identyczne [BRAK RERENDERU]
+                        // sami sterujemy czy ma sie RERENDEROWAĆ
+                        return true;
+                      } else {
+                        // jeśli zwróci 'false' -> Inne wartości PROPS -> WYWOŁA RERENDER
+                        return false;
+                      }
+                    }
+      -) MemoizedComponent [ZWRACANA WARTOŚĆ] | komponent do uzywania (identyczny jak w 'SomeComponent' tylko z funkcjonalnością)
+
+  
+  */
+  /*
+  SUPER jest do poprawy OPTYMALIZACJI, ale nie zawsze jest potrzbne. PRZESTRZEGAJMY ZASAD:
+    1) prop 'children' jest LEPSZE od opakowania komponentów wewnątrz (te z children się nie RERENDERUJĄ 
+        gdy stan komponentu się zmieni)
+    2) NIE WYNOŚMY stanu dalej niż do najbliższego wspólnego komponentu
+    3) LOGIKA RENDEROWANIE ma byc PURE
+    4) UNIKAĆ zbędnych EFFECTÓW 
+    5) UNIKAĆ ZBĘDNYCH ZALEŻNOŚCI w tablicach zależności
+  */
+  const [rerender, setRerender] = useState(false);
+  const [obj3] = useState({ id: 3 });
+  // stabilna referencja dla OBIEKTOW|TABLIC poprzez 'useMemo' dla funkcji dzięki 'useCallback'
+  const stableRef = useMemo(() => {
+    return {
+      id: obj3.id,
+    };
+  }, [obj3.id]);
+
+  return (
+    <div>
+      <p>memo KOMPONENT | {rerender ? "TRUE" : "FALSE"}</p>
+      {/* MIMO iz przy naciścięciu 'ReactAPIMemo' się RERENDERUJE to 'ReactAPIMemoComp' juz nie bo dostanie stabline PROPS*/}
+      <button
+        onClick={() => {
+          setRerender((prev) => !prev);
+        }}
+      >
+        RERENDER PARENT memo
+      </button>
+      <ReactAPIMemoComp
+        age={21}
+        name={"ABC"}
+        // TEN obiekt ponizej ZAWSZE wywoła 'rerender' bo jest tworzony zawsze przy rerenderze (czyli ma zmienną referencje)
+        // dlatego jest ZAKOMENTOWANY
+        // obj1={{ id: 1 }}
+        obj2={objOutside}
+        obj3={stableRef}
+      />
+      {/*
+        W tym stosujemy funkcję porównującą PROPS 'memoPropsEqualFuncs'
+        która sprawdza tylko czy wartośc 'id' się zmieniła
+        dlatego zapobiega RERENDEROWI
+      */}
+      <ReactAPIMemoComp2 obj1={{ id: 1 }} />
+    </div>
+  );
 }
+
+const ReactAPIMemoComp = memo(function ReactAPIMemoCompInner(props) {
+  console.log("!!!! ReactAPIMemoComp RERENDER");
+  return (
+    <p>
+      MEMO COMP | {props.name} {props.age} |
+      {/* <span>OBIEKT 1 = {props.obj1.id ?? "Brak stabilnej referencji"}</span>{" "} */}
+      <span>OBIEKT 2 = {props.obj2.id}</span>{" "}
+      <span>OBIEKT 3 = {props.obj3.id}</span>{" "}
+    </p>
+  );
+});
+
+function ReactAPIMemoComp2Inner(props) {
+  console.log("!!!! ReactAPIMemoComp2 RERENDER");
+  return <p> MEMO COMP 2 | OBIEKT 1 = {props.obj1.id}</p>;
+}
+function memoPropsEqualFuncs(prevCompProps, newCompProps) {
+  if (prevCompProps.obj1.id === newCompProps.obj1.id) {
+    // jeśli zwróci 'true' -> STARE i NOWE props są identyczne [BRAK RERENDERU]
+    // sami tym sterujemy
+    return true;
+  } else {
+    // jeśli zwróci 'false' -> Inne wartości PROPS -> WYWOŁA RERENDER
+    return false;
+  }
+}
+const ReactAPIMemoComp2 = memo(ReactAPIMemoComp2Inner, memoPropsEqualFuncs);
 
 // #################################
 // ####
