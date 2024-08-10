@@ -3,6 +3,7 @@ import {
   forwardRef,
   lazy,
   memo,
+  startTransition,
   Suspense,
   useContext,
   useEffect,
@@ -529,18 +530,215 @@ function memoPropsEqualFuncs(prevCompProps, newCompProps) {
 const ReactAPIMemoComp2 = memo(ReactAPIMemoComp2Inner, memoPropsEqualFuncs);
 
 // #################################
-// ####
+// #### startTransition(scope) | pozwala aktualizować stan bez blokowania UI (podobne do useTranistion, BEZ isPending)
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
 function ReactAPIStartTransition() {
-  return <div></div>;
+  /*
+  startTransition(scope)
+    -) scope -> funkcja, która w sobie wywołuje settery stanu
+                wszystkie synchronicznie wywołane settery stanu są oznaczone jako 'tranzycje'
+    -) funkcja nie zwraca nic
+    -) pochodzi z biblioteki {react}
+
+  (UWAGA mozna wywołać POZA KOMPONENTEM np: z biblioteki danych i innych skryptów zewnętrznych)
+
+  TRANYSCJE POMAGAJA nie wpadać w niechciany <Suspance> [oznaczone nimi zmiany go nie wywołają]
+
+  ZASTRZEZENIA:
+    - jeśli musimy wywołac tranzycję z innego miejsca zastosujmy (startTransition [ale z poza useTransition (PROSTO z REACT)])
+          działa tak samo tylko nie ma 'isPending'
+    - zadziała gdy wywołujemy settery stanu (dla CUSTOM_HOOK i PROPS stosować 'useDefferedValue')
+    - update STANU oznaczonego jako 'TRANZYCJA' będzie PRZERWANY przez inne UPDATY STANU i ponownie wywołany 
+          np: GRAF jako Tranzycja to gdy zaczniemy wpisywać w input to przerwie update grafu, zaktualizuje input state i wroci do grafu
+    - WIELE TRANZYCJI jest batchowanych razem (doiero zmiana wszystkich wywoła rerender)[ZAPEWNE ZOSTANIE USUNIETE Z CZASEM]
+
+    - NIE OPAKOWYWAĆ AKTUALIZACJI CONTROLOWANYCH POL formualrza w TRANZYCJE (setInput1 -> to nie w tranzycji)
+    - nie wywoływać timeoutów/intervałów w startTransition (wtedy nie działa) [tylko synchroniczne settery stanow]
+          zamiast tego opakować startTransition w timeoutów/intervałów !!!
+    - wywołuje się natychmiast  (ponizej będzie '1''2''3') -> tylko SETY STANOW są Oznaczone jako TRANISTION 
+              console.log(1);
+              startTransition(() => {
+                console.log(2);
+                setPage('/about');
+              });
+              console.log(3);
+
+  EKSPERYMENTALNE - pokazywanie błędu jeśli funkcja w 'startTransition' zwróci błąd
+    <ErrorBoundry fallback={<p>Bład w tranzycji</p>}>
+      <ComponentZuseTransition/>
+    </ErrorBoundry>
+  */
+
+  const [input1, setInput1] = useState("");
+  const [input2, setInput2] = useState("");
+  const [tab, setTab] = useState("111");
+
+  return (
+    <div>
+      <p>TAB = {tab}</p>
+      <button
+        onClick={() => {
+          console.log("@@ RESET WYWOŁANY");
+          setTab("111");
+          setInput1("");
+          setInput2("");
+        }}
+      >
+        RESET
+      </button>
+      <p>
+        <label>
+          TRANZYCJA
+          <input
+            onChange={(e) => {
+              const value = e.target.value;
+              setInput1(value);
+
+              // ZMIANY W TYM NIE BLOKUJA przycisku RESET [NIE BLOKUJA UI]
+              startTransition(() => {
+                setTab((prev) => prev + value);
+              });
+            }}
+            value={input1}
+          ></input>
+        </label>
+      </p>
+      <p>
+        <label>
+          BEZ TRANZYCJI
+          <input
+            onChange={(e) => {
+              setInput2(e.target.value);
+
+              // ZMIANY W TYM BLOKUJA przycisk RESET dopóki CHILD sie nie wyrenderuje
+              setTab((prev) => prev + e.target.value);
+            }}
+            value={input2}
+          ></input>
+        </label>
+      </p>
+      <ReactHooksTransitionChild tab={tab} />
+    </div>
+  );
 }
 
+const ReactHooksTransitionChild = memo(function ReactHooksTransitionChildInner({
+  tab,
+}) {
+  if (tab !== "111") {
+    let i = 0;
+    while (i < 1000000000) {
+      i++;
+    }
+  }
+
+  return <p>DŁUGOŚĆ TABLICY{tab.length}</p>;
+});
+
 // #################################
-// ####
+// #### use | -> (Eksperymentalna funkcjonalność) pozwala czytać wartości z PROMISE lub CONTEXT
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
 function ReactAPIUse() {
+  /*
+  const value = use(resource);
+    -) resource | źródło danych do odczytania z wartości odczytane przez PROMISE lub CONTEXT
+    -) value | wartość odczytana z źródła danych (resolve(promise) LUB wartość contextu)
+
+  const messagePromise = new Promise((resolve, reject) => {
+    resolve({
+      id: "ABC123",
+    });
+    // reject({
+    //   error: "Error123",
+    // });
+  });
+  const messagePromise2 = new Promise((resolve, reject) => {      // WERSJA Z OBSLUGA BŁĘDU !!!
+    reject();
+  }).catch(() => {
+    return "no new message found.";
+  });
+  const ThemeContext = createContext("CONTEXT123")
+  const message = use(messagePromise);      // message -> { id: "ABC123", }
+  const theme = use(ThemeContext);          // theme   -> "CONTEXT123"    | DZIAŁA PODOBNIE do 'useContext'
+                                            szuka wartości przekazanych przezn nablizszy <Context.Provider value='...'
+                                                      opakowujący komponent wykorzystujący 'use' z KONTEXTEM
+                                            UWAGA !!! tak jak 'useContext' ignoruje <Context.Provider value='...' z KOMPONENTU
+                                                      który wywołuje 'use'
+
+  ZASTRZEZENIA:
+    -) jak HOOKI musi być wywołany w KOMPONENCIE lub HOOKU
+    -) 'use' moze być uzyte wewnątrz PĘTLI oraz IF !!!
+            zastosowanie z PROMISE -> pozwala na działanie mechanizmu <Suspanse> i <ErrorBoundry>
+                                      gdy promise jest w PENDING to komponent jest w SUSPANSE i wywoła 'fallback' w <Suspanse>
+                                      gdy zwróci RESOLVE -> wyświetli faktyczny komponent ( środek <Suspanse> )
+                                      gdy zwróci REJECT -> wywoła najblizszy <ErrorBoundry>
+    -) w SERVER COMPONENETACH
+          preferujemy async/await  | nad 'use'
+          z async/await -> komponent się renderuje dopiero gdy skończy się wywołanie await
+          'use' -> rerenderuje komponent gdy dane są RESOLVED (rozwiązanie -> w kontekście dostarczenia z sukcesem)
+    -) w SERVER COMPONENETACH
+          preferujemy tworzenie PROMISOW w SERVER KOMPONENTACH i dostarczanie ich do KLIENT KOMPONENTOW poprzez 'props'
+            (nie tworzymy promisow w KLIENT komponentach -> przy kazdym rerenderze sa tworzone od nowa)
+            promisy z SERVER KOMPONENTOW są STABLINE w KLIENT KOMPONENTACH miedzy RERENDERAMI
+            UWAGA!!! wartości zwracane przez PROMISE przekazywane w ten sposób muszą byc SERIALIZABLE !!!!
+                  Serialization -> The process whereby an object or data structure is translated into a format 
+                                    suitable for transfer over a network, or storage
+                  np: FUNKCJE NIE SA SERIALIZABLE
+                  ale PRYMITYWNE WARTOŚCI i OBIKETY, TABLICE itp.. SA!!!
+
+    -) GDY PROMISE zwróci REJECT (dostarczy dane z ODRZUCENIA operacji)
+          1) mozna wyświetlić <ErrorBoundry>
+          2) mozna wyswietlic alternatywną wartości z '.catch(err => {...})'
+    -) NIE MOZNA UZYWAC 'use' w     try {...} catch(exc) {...}
+    -)
+
+  */
+
+  /*
+  #################
+  ## <ErrorBoundary />      | dodatek opisujący mechanizm wyłapywania BŁĘDOW 
+  VVVVVVVVVVVVVVVVV
+
+  class ErrorBoundary extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = { hasError: false };
+    }
+
+    static getDerivedStateFromError(error) {
+      // Update state so the next render will show the fallback UI.
+      return { hasError: true };
+    }
+
+    componentDidCatch(error, info) {
+      // Example "componentStack":
+      //   in ComponentThatThrows (created by App)
+      //   in ErrorBoundary (created by App)
+      //   in div (created by App)
+      //   in App
+      logErrorToMyService(error, info.componentStack);
+    }
+
+    render() {
+      if (this.state.hasError) {
+        // You can render any custom fallback UI
+        return this.props.fallback;
+      }
+
+      return this.props.children;
+    }
+  }
+
+  ### ZASTOSOWANIE
+
+  <ErrorBoundary fallback={<p>Something went wrong</p>}>
+    <Profile />
+  </ErrorBoundary>
+
+  */
+
   return <div></div>;
 }
 

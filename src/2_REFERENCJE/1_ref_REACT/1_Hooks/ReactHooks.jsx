@@ -156,7 +156,7 @@ const ObjectContext = createContext({ name: "" });
 
 function ReactHooksContext() {
   const [object, setObject] = useState({ name: "Aga" });
-  const context = useContext(MyContext); // light
+  const context = useContext(MyContext); // light -> IGNORUJE <MyContext.Provider value='dark'> w tym komponencie
 
   const stableObject = useMemo(() => {
     return {
