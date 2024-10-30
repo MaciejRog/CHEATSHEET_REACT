@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 function ReactDOMComponents() {
   /*
@@ -21,6 +21,11 @@ function ReactDOMComponents() {
   return (
     <div>
       <ReactDOMComponentsCommon />
+      <ReactDOMComponentsForm />
+      <ReactDOMComponentsForm2 />
+      <ReactDOMComponentsSelectOption />
+      <ReactDOMComponentsProgress />
+      <ReactDOMComponentsTextarea />
     </div>
   );
 }
@@ -105,6 +110,21 @@ function ReactDOMComponentsCommon() {
       <p>---------- PROPS ----------</p>
       {/* ref */}
       <div ref={domRef}>REF</div>
+      <div
+        ref={(ref) => {
+          // do atrybutu 'ref' można też przekazać funkcję !!!
+          // wtedy na 'mount' dostaniemy referencję do obiektu, a przy 'unmount' null (np przy rerenderze null i domRef dostaniemy)
+          // wywoła się za każdym razem gdy dostanie nową wartość callbacku (np: tak jak tutaj przy każdym rerenderze zwróci nową funkcję)
+          console.log("ReactDomComponents | ref callback = ", ref);
+
+          // UWAGA!!! EKSPERYMENTALNIE przyjmuje 'return' cleanup function
+          // return () => {};
+        }}
+      >
+        REF
+      </div>
+      {/* class CSS -> zamiast nazwy 'class' stosujemy className */}
+      <div className="nazwa-klasy-css"></div>
       {/* style */}
       <div style={{ backgroundColor: "red", height: "25px" }}></div>
       {/* aria-* */}
@@ -118,8 +138,31 @@ function ReactDOMComponentsCommon() {
         inputMode="numeric"
         style={{ border: "1px solid grey" }}
       ></div>
+      {/* dangerouslySetInnerHTML | odpowiednik 'innerHTML' pozwala osadzać kod HTML (BARDZO NIEBEZPIECZNE) */}
+      <div
+        dangerouslySetInnerHTML={{
+          __html: `<br><br><div>TO JEST OSADZONE PRZEZ INNER HTML REACTOWE</div><br><br>`,
+        }}
+      ></div>
 
       <p>---------- EVENTS ----------</p>
+      <div
+        onClick={(e) => {
+          // eventy otrzymuja tzw: 'SYNTETIC EVENT' reactowa wersja obudowująca natywne eventy
+          console.log("EVENT , SYNTETIC EVENT= ", e);
+
+          /*
+          WSZYSTKIE EVENTY DODAWANE W REACTIE są tak na prawdę dodawane na ROOTCIE !!!
+
+          Posiada inne pola i naprawia, niektóre niekonsekwencje przeglądarek.
+          Powodować może zmiany w różnych property event względem natywnych eventów np:
+          currentTarget, eventPhase, target, and type
+
+          DOSTĘP DO NATYWNEGO EVENTU PRZEZ:
+            nativeEvent: A DOM Event. The original browser event object.
+          */
+        }}
+      ></div>
       {/* eventy tylko dla <form> */}
       <form
         onReset={console.log(
@@ -215,3 +258,490 @@ function ReactDOMComponentsCommon() {
     </div>
   );
 }
+
+// #################################
+// #### <form></form> [EKSPERYMENTALNE FUNKCJONALNOŚCI]
+// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+const productId = 123;
+
+function ReactDOMComponentsForm() {
+  /*
+  w opisie pominięto:
+    - HOOK 'useFormStatus'
+    - HOOK 'useOptimistic'
+    - KOMPONENT <ErrorBoundary fallback={<p>Coś</p>}>...</ErrorBoundary>
+    - HOOK 'useActionState'
+
+  
+  <form action={search}>
+    <input name="query" />
+    <button type="submit">Search</button>
+  </form>
+
+  <form> przyjmuje atrybut 'action' jako:
+    1) URL -> natywne zachowanie przeglądarki (przekierowanie, ale ZAWSZE METODA 'POST" szyfrowane dane)
+    2) FUNKCJE -> może być asynchroniczna (z dopiskiem "use server" w Server Componentach pozwala 
+                korzystać z formularza zanim załaduje się kod JS)
+    UWAGA!!  można nadpisać poprzez atrybut 'formAction' NA <button>, <input type="submit">, or <input type="image">
+  */
+
+  async function addToCart(formData) {
+    ("use server");
+    // z obiektu 'formData' poprzez metodę 'get' można wyciągnąć wartości pól formularza
+    const poleValue = formData.get("pole");
+    const productIdValue = formData.get("productId");
+    console.log("addToCart | poleValue = ", poleValue);
+    console.log("addToCart | productIdValue = ", productIdValue);
+    // await updateCart(productId);
+  }
+
+  {
+    /* METODA 1 PRZEKAZYWANIA DODATKOWYCH DANYCH DO ACTION = poprzez 'bindowanie */
+  }
+  async function addToCart2(productId, formData) {
+    "use server";
+    console.log("addToCart2 | formData = ", formData);
+    // await updateCart(productId);
+  }
+  // zbindowaliśmy 'productId' dzięki czemu addToCart2 ma do niej dostęp i otrzyma ją jako argument;)
+  const addProductToCart = addToCart2.bind(null, productId);
+
+  function save(formData) {
+    const poleValue = formData.get("pole");
+    console.log("SAVE | poleValue = ", poleValue);
+  }
+
+  return (
+    <>
+      {/* przyjmuje funkcje asynchroniczną */}
+      <form action={addToCart}>
+        {/* METODA 2 PRZEKAZYWANIA DODATKOWYCH DANYCH DO ACTION = poprzez pola "hidden" */}
+        <input type="hidden" name="productId" value={productId} />
+        <input name="pole" />
+        <button type="submit">Add to Cart</button>
+        {/* Nadpisanie wywołania 'action', pominie wywołanie funkcji 'addToCart', w zamian wywoła funkcję 'save' */}
+        <button formAction={save}>Save draft</button>
+      </form>
+      <form action={addProductToCart}>
+        <input name="pole" />
+        <button type="submit">Add to Cart</button>
+      </form>
+    </>
+  );
+}
+
+// #################################
+// #### FORMULARZE <input> && <form></form>
+// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactDOMComponentsForm2() {
+  /*
+  POLA KONTROLOWANE: (ich wartości z pól są zapisane do stanu)
+    - WYMAGAJĄ atrybutu 'value' lub 'checked' [ustalają ich wartość, też domyślną]
+    - do tego potrzebny event 'onChange'
+        UWAGA!!! 'value' jest STRINGIEM a 'checked' BOOLEAN
+
+  POLA NIEKONTROLOWANE: (ich wartość jest do odczytania dopiero przy submit / obsłudze eventu)
+    - do ustawienia wartości domyślnych jest (defaultChecked [radio i checkbox] LUB defaultValue)
+
+  UWAGA! Komponenty muszą byc albo KONTROLOWANE albo NIEKONTROLOWANE (nie może sie to zmienic w czasie)
+
+  ISTOTNE ATRYBUTY:
+    - autoComplete
+    - autoFocus
+    - disabled
+    - placeholder
+  
+  DLA KAŻDEGO <input> MUSIMY NADAC ATRYBUT 'name'
+  <input name="nazwa-pola-formularza"/>
+
+  DLA KONTROLOWANYCH wartości nadawane dla STANU muszą byż zgodne z 'e.target.value' lub 'e.target.checked'
+    (NIE MOŻNA ICH MODYFIKOWAĆ np: 'e.target.value.toUpperCase()' jest BŁĘDNE !!!)
+    + UPDATE MUSI BYĆ SYNCHRONICZNY !!! nie dopuszczalna jest asynchroniczność
+  */
+
+  const [checked, setChecked] = useState(false);
+  const [checkedValue, setCheckedValue] = useState(0);
+
+  // wartości dla KONTROLOWANYCH PÓL (nie powinny byc 'null' lub 'undefined')
+  const [value1, setValue1] = useState("");
+  const [value2, setValue2] = useState(0); // dla <input> które mogą przyjąć NUMBER, ale na onChange i tak to ustawią jako STRING !!!
+
+  // do przetrzymania z NIEKONTROLOWANEGO POLA
+  const [uncontrolVal, setUncontrolVal] = useState(undefined);
+
+  function handleState(name, value) {
+    switch (name) {
+      case "checked":
+        setChecked(value);
+        break;
+      case "checked-value":
+        setCheckedValue(value);
+        break;
+      case "value-1":
+        setValue1(value);
+        break;
+      case "value-2":
+        setValue2(value);
+        break;
+      case "uncontrol-value":
+        setUncontrolVal(value);
+        break;
+      default:
+        break;
+    }
+  }
+
+  const handleChangeChecked = (e) => {
+    // odczytujmey 'checked' i 'name' z atrybutów <input>
+    const { name, checked } = e.target;
+    console.warn(
+      `handleChangeChecked | name = ${name} | checked = ${checked} | typeof checked = ${typeof checked}`
+    );
+    handleState(name, checked);
+  };
+
+  const handleChangeValue = (e) => {
+    // odczytujmey 'value' i 'name' z atrybutów <input>
+    const { name, value } = e.target;
+    console.warn(
+      `handleChangeValue | name = ${name} | value = ${value} | typeof value = ${typeof value}`
+    );
+    handleState(name, value);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.warn("FORM SUBMIT | e = ", e);
+    console.warn(
+      "FORM SUBMIT | new FormData(e.target) = ",
+      new FormData(e.target)
+    );
+    console.warn(
+      "FORM SUBMIT | new FormData(e.target).get('value-1') = ",
+      new FormData(e.target).get("value-1")
+    );
+  };
+
+  const handleReset = (e) => {
+    e.preventDefault();
+    console.warn("FORM RESET | e = ", e);
+  };
+
+  return (
+    <>
+      <form
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          gap: "16px",
+        }}
+        onSubmit={handleSubmit}
+        onReset={handleReset}
+      >
+        {/* 
+        ###############################################
+        ## <label> -> OZNACZENIE POLA i POPRAWA JEGO ACCESIBILITY
+        VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+        */}
+        {/* LABEL, WERSJA 1 - poprzez atrybuty 'htmlFor' oraz 'id' */}
+        <label htmlFor="label-1">LABEL 1</label>
+        <input id="label-1"></input>
+        {/* LABEL, WERSJA 2 - poprzez zagnieżdzenie <input> w <label> */}
+        <label>
+          <span>LABEL 2</span>
+          <input name="label-2"></input>
+        </label>
+
+        {/* 
+        ###############################################
+        ## ELEMENTY 'checked' | tylko <input type="checkbox"/> (gdy jest atrybut 'checked' to jest KONTROLOWANY)
+        VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+        */}
+        <label>
+          <span>CHECKED</span>
+          <input
+            name="checked"
+            type="checkbox"
+            value={checked}
+            onChange={handleChangeChecked}
+          ></input>
+        </label>
+
+        {/* 
+        ###############################################
+        ## ELEMENTY 'checked' i 'value' | tylko <input type="radio"/> (gdy jest atrybut 'checked' to jest KONTROLOWANY)
+        VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+        */}
+        <label>
+          <span>CHECKED VALUE</span>
+          <input
+            name="checked-value"
+            type="radio"
+            value={"1"}
+            checked={checkedValue === "1" ? true : false}
+            onChange={handleChangeValue}
+          ></input>
+          <input
+            name="checked-value"
+            type="radio"
+            value={"2"}
+            checked={checkedValue === "2" ? true : false}
+            onChange={handleChangeValue}
+          ></input>
+        </label>
+        {/* 
+        ###############################################
+        ## ELEMENTY 'value' | (gdy jest atrybut 'value' to jest KONTROLOWANY)
+        VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+        */}
+        <label>
+          <span>VALUE 1 - TEXT</span>
+          <input
+            name="value-1"
+            type="text"
+            // type="color"
+            // type="date"  // również przyjmuje 'Date.now()'
+            // type="email"
+            // type="password"
+            // type="range"
+            // type="search"
+            // type="tel"
+            // type="time"
+            // type="url"
+            value={value1}
+            onChange={handleChangeValue}
+          ></input>
+        </label>
+
+        <label>
+          <span>
+            VALUE 2 - NUMBER (i tak będzie po onChange zamiana na STRING)
+          </span>
+          <input
+            name="value-2"
+            type="number"
+            // type="range"
+            value={value2}
+            onChange={handleChangeValue}
+          ></input>
+        </label>
+        {/* 
+        ###############################################
+        ## ELEMENTY NIEKONTROLOWANE | <input type="file"/>
+        VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+        */}
+        <label>
+          <span>NIEKONTROLOWANE type=file</span>
+          <input
+            name="uncontrol-value"
+            type="file"
+            onChange={handleChangeValue}
+            accept=".txt"
+            // capture="user"
+            multiple={true}
+          ></input>
+          <span>{uncontrolVal}</span>
+        </label>
+
+        {/* 
+        ###############################################
+        ## PRZYCISKI DO SUBMIT (zatwierdzania formularza)
+        VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+        */}
+        <button type="submit">SUBMIT BTN</button>
+        <label>
+          <span>INPUT SUBMIT</span>
+          <input name="input-submit" type="submit" />
+        </label>
+        <label>
+          <span>INPUT IMAGE SUBMIT</span>
+          <input
+            name="img-submit"
+            type="image"
+            alt="Zdjęcie"
+            width={"20px"}
+            height={"20px"}
+            src=""
+          />
+        </label>
+        {/* 
+        ###############################################
+        ## PRZYCISKI DO RESET (resetowanie formularza)
+        VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+        */}
+        <button type="reset">RESET BTN</button>
+        <label>
+          <span>INPUT RESET</span>
+          <input name="input-reset" type="reset" />
+        </label>
+        {/* 
+        ###############################################
+        ## PRZYCISKI BEZ WYWOŁANIA eventów (submit, reset) FORMULARZA
+        VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+        */}
+        <button type="button">BTN KTÓRY NIC NIE WYWOŁA</button>
+      </form>
+    </>
+  );
+}
+
+// #################################
+// #### <select> <option>
+// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+const OPTIONS = [
+  { id: "option-1", value: "1", text: "Option-1" },
+  { id: "option-2", value: "2", text: "Option-2" },
+];
+
+function ReactDOMComponentsSelectOption() {
+  // SELECT KONTROLOWANY | sterowanie zarządzaniem domyślnie wybranej wartości dla <select> poprzez stan inicjalny
+  // SELECT NIEKONTROLOWANY | poprzez wartość atryubutu 'defaultValue'
+
+  //dla <select>  STRING
+  // const [selectVal, setSelectVal] = useState("-1");
+  //dla <select multiple={true}> TABLICA STRINGOW
+  const [selectVal, setSelectVal] = useState(["-1"]);
+
+  const handleChange = (e) => {
+    // obsługa onChange identyczna jak dla inputów (opartych na 'value')
+    const { name, value, selectedOptions } = e.target;
+    console.warn(
+      `handleChange SELECT | name = ${name} | value = ${value} | typeof value = ${typeof value} | selectedOptions = ${Array.from(
+        selectedOptions
+      ).map((option) => option.value)}`
+    );
+    //dla <select>
+    // setSelectVal(value);
+    //dla <select multiple={true}> WERSJA 1
+    setSelectVal((prev) => {
+      if (prev.includes(value)) {
+        return prev.filter((el) => el !== value);
+      } else {
+        return [...prev, value];
+      }
+    });
+    //dla <select multiple={true}> WERSJA 2
+    const options = [...selectedOptions];
+    const values = options.map((option) => option.value);
+    setSelectVal(values);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const selectVal = formData.get("select-name");
+    // NIE RADZI SOBIE Z <select multiple={true}>
+    console.warn(`handleSubmit SELECT | selectVal=${selectVal}`);
+    // ABY WYDOBYĆ <select multiple={true}>
+    console.warn(
+      `handleSubmit SELECT multiple={true} | selectVal=${Array.from(
+        formData.entries()
+      )}`
+    );
+  };
+
+  return (
+    <>
+      <form onSubmit={handleSubmit}>
+        {/* select jak inne pola <input> najlepiej niech przyjmuje name  */}
+        <label>
+          <span>Wybierz coś z selecta</span>
+          {/* select może być komponentem kontrolowanym przez podanie 'value' i do tego 'onChange' */}
+          <select
+            multiple={true}
+            size={2}
+            name="select-name"
+            value={selectVal}
+            onChange={handleChange}
+          >
+            {/* aby zmiana była widoczna w SELECT OPTION muszą mieć atrybuty 'value' */}
+            <option value="-1">Default</option>
+            {OPTIONS.map((optionEL) => {
+              return (
+                <option key={optionEL.id} value={optionEL.value}>
+                  {optionEL.text}
+                </option>
+              );
+            })}
+          </select>
+        </label>
+        <button type="submit">Submit</button>
+      </form>
+    </>
+  );
+}
+
+// #################################
+// #### <progress> Raczej mało przydatne ...
+// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactDOMComponentsProgress() {
+  /*
+  bez podania 'max' jego wartośc domyślna to 1 
+  */
+  return (
+    <>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <span>ROGRASSY</span>
+        <progress value={0} />
+        <progress value={0.5} />
+        <progress value={0.7} />
+        <progress value={75} max={100} />
+        <progress value={1} />
+        {/* ustawienie 'value' na null USTALA STAN <progess> na NIEOKREŚLNY (takie czekanie na otrzymanie danych) */}
+        <progress value={null} />
+      </div>
+    </>
+  );
+}
+
+// #################################
+// #### <textarea>
+// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactDOMComponentsTextarea() {
+  const [value, setValue] = useState("");
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    console.warn(
+      `handleChange TEXTAREA | name = ${name} | value = ${value} | typeof value = ${typeof value}`
+    );
+    setValue(value);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const selectVal = formData.get("select-textarea");
+    console.warn(`handleSubmit TEXTAREA | selectVal=${selectVal}`);
+  };
+
+  return (
+    <>
+      <form onSubmit={handleSubmit}>
+        <label>
+          <span>Textarea - field</span>
+          <textarea
+            name="select-textarea"
+            value={value}
+            onChange={handleChange}
+          ></textarea>
+        </label>
+        <button type="submit">Prześlij</button>
+      </form>
+    </>
+  );
+}
+
+// #################################
+// ####
+// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+// function ReactDOMComponents() {
+//   return <></>;
+// }

@@ -19,7 +19,7 @@ function App() {
         ## REACT TEMATY
         VVVVVVVVVVVVVVVVVVVVVVVVVVVVV
         */}
-      <div>
+      {/* <div>
         <Separator title={"## TEMAT 1 - KOMPONENT"} />
         <Komponent />
 
@@ -31,7 +31,7 @@ function App() {
 
         <Separator title={"## TEMAT 4 - SIDE EFFECTY"} />
         <SideEffect />
-      </div>
+      </div> */}
 
       {/* 
         #############################
@@ -39,7 +39,7 @@ function App() {
         VVVVVVVVVVVVVVVVVVVVVVVVVVVVV
         */}
       <div>
-        <Separator title={"## REFERENCJE REACT 1 - HOOKS"} />
+        {/* <Separator title={"## REFERENCJE REACT 1 - HOOKS"} />
         <ReactHooks />
 
         <Separator title={"## REFERENCJE REACT 2 - KOMPONENTY"} />
@@ -49,7 +49,7 @@ function App() {
         <ReactAPI />
 
         <Separator title={"## REFERENCJE REACT DOM 1 - HOOKS"} />
-        <ReactDOMHooks />
+        <ReactDOMHooks /> */}
 
         <Separator title={"## REFERENCJE REACT DOM 2 - KOMPONENTY"} />
         <ReactDOMComponents />
