@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 function ReactDOMComponents() {
   /*
@@ -704,7 +704,20 @@ function ReactDOMComponentsProgress() {
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
 function ReactDOMComponentsTextarea() {
-  const [value, setValue] = useState("");
+  /*
+  <textarea> tak samo jak <input> może byc KONTROLOWANE przez atrybut 'value' + 'onChange' (nie może być ZMIENNY W CZASIE)
+  --lub jak jest NIEKONTROLOWANY to domyślną wartość można mu nadać przez 'defultValue'
+
+  UWAGA!!! nie można zagniezdzać dzieci !!! <textarea>Some content</textarea> NIE DOZWOLONE
+  */
+  const [value, setValue] = useState(""); // tak samo jak w <input> value musi być STRING
+  //                                          jeżeli jest NULL np: z API to najlepiej `value ?? ''`
+  const textareaRef = useRef(null);
+
+  useLayoutEffect(() => {
+    textareaRef.current.style.height = "auto";
+    textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+  }, [value]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -718,7 +731,9 @@ function ReactDOMComponentsTextarea() {
     e.preventDefault();
     const formData = new FormData(e.target);
     const selectVal = formData.get("select-textarea");
-    console.warn(`handleSubmit TEXTAREA | selectVal=${selectVal}`);
+    console.warn(`handleSubmit TEXTAREA | selectVal = ${selectVal}`);
+    const formJson = Object.fromEntries(formData.entries());
+    console.log("handleSubmit | formJson = ", formJson);
   };
 
   return (
@@ -727,10 +742,17 @@ function ReactDOMComponentsTextarea() {
         <label>
           <span>Textarea - field</span>
           <textarea
+            ref={textareaRef}
             name="select-textarea"
             value={value}
             onChange={handleChange}
-          ></textarea>
+            style={{
+              resize: "none", // służy do uniemożliwienia zmiany wielkości elemntu
+            }}
+            cols={40} // liczba znaków w szerokości
+            rows={1} // liczba widocznych linii tekstu
+            // wrap="off" //'hard', 'soft', or 'off'
+          />
         </label>
         <button type="submit">Prześlij</button>
       </form>
