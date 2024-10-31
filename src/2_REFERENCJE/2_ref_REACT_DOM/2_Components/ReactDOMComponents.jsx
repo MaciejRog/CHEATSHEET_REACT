@@ -761,6 +761,98 @@ function ReactDOMComponentsTextarea() {
 }
 
 // #################################
+// #### <link> <meta> <script> <style> <title>  (EKSPERYMENTALNE)
+// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
+function ReactDOMComponentResourceTags() {
+  return (
+    <>
+      {/* 
+      #################
+      ## link
+      VVVVVVVVVVVVVVVVV
+
+      linki do STYLI, FONTÓW, ICON, 
+
+      UWAGA!!! niezalażnie gdzie dodasz tag <link> React wrzuci go do tagu <head> na stronie, chyba że:
+        - DLA rel="stylesheet" ABY TO SIĘ WYDARZYŁO MUSI MIEĆ 'precedence' określone
+        - jeśli ma 'itemProp' (to nie jest dodawane do HEAD) - bo wtedy jest on traktowany jako metadane
+                <section itemScope>
+                  <h3>Annotating specific items</h3>
+                  <link itemProp="author" href="http://example.com/" />
+                  <p>...</p>
+                </section>
+        - jeśli ma 'onLoad' lub 'onError' (to nie jest dodawane do HEAD)
+
+      ATRYBUTY:
+        - rel [WYMAGANY](string) => określa relacje z źródłem danych (rel="stylesheet" traktuje inaczej)
+        - href (string) => określa URL do zasobu (resource)
+        - blocking (string) => ustawiony na 'render' wstrzyma ładowanie strony póki się zasób nie załaduje
+        - .. inne (crossOrigin | referrerPolicy | fetchPriority | integrity)
+
+      ATRYBUTY dla [rel="stylesheet"]:
+        - precedence (string) => określa który w kolei ma byc dodany (chodzi o nadpisywanie styli) [dla tych samych wartości ]
+              // od 'low' przez 'medium' do 'high'
+        - media (string) => ogranicza zaczytanie stylu dla danych 'media query'
+        - title (string) => określa nazwę dla alternatywnego stylu
+      --------
+        - diabled (boolean) ->  czy styl ma się zaczytac
+        - onError -> funkja do wywołania przy błędzie załadowania
+        - onLoad -> funckcja do wywołania po poprawnym załadowaniu
+
+      ATRYBUTY dla [rel="preload" || rel="modulepreload"]:
+        - as (steing) -> określa rodzaj zasobu 'audio', 'document', 'embed', 'fetch', 'font' 'image', 'object', 'script', 'style', 'video', 'worker'
+        -... inne do OBRAZKA  (imageSrcSet, imageSizes)
+      
+      ATRYBUTY dla [rel="icon" || rel="apple-touch-icon"]:
+        - sizes (wymiary obrazka w string)
+
+
+      <link rel="stylesheet" SĄ TRAKTOWANE WYJĄTKOWO:
+        - SUSPENS (zawieszenie) komponentu który dodaje ten link, dopóki się nie załaduje
+        - jesli 2+ maja takie samo 'href' do React doda tylko 1
+      UWAGA!!! Nie ma specjalnego traktowanie gdy:
+        - nie ma 'precedence'
+        - gdy jest 'diabled' LUB 'onError' LUB 'onLoad'
+      UWAGA!!! React może zostawić <link> nawet gdy komponent jest odmontowany
+
+      */}
+      <link rel="icon" href="favicon.ico" />
+      <link rel="pingback" href="http://www.example.com/xmlrpc.php" />
+      <link rel="stylesheet" href="sitemap.css" />
+      {/* <link rel="stylesheet" href="sitemap.css" precedence="medium" /> */}
+      {/* 
+      #################
+      ## meta
+      VVVVVVVVVVVVVVVVV
+      */}
+      <meta
+        name="keywords"
+        content="React, JavaScript, semantic markup, html"
+      />
+      {/* 
+      #################
+      ## script
+      VVVVVVVVVVVVVVVVV
+      */}
+      <script> alert(`hi!`) </script>
+      {/* 
+      #################
+      ## style
+      VVVVVVVVVVVVVVVVV
+      */}
+      <style>{` p { color: red; } `}</style>
+      {/* 
+      #################
+      ## title
+      VVVVVVVVVVVVVVVVV
+      */}
+      <title>My Blog</title>
+    </>
+  );
+}
+
+// #################################
 // ####
 // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
