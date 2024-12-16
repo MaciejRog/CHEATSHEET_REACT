@@ -51,8 +51,8 @@ function App() {
         <Separator title={"## REFERENCJE REACT DOM 1 - HOOKS"} />
         <ReactDOMHooks /> */}
 
-        <Separator title={"## REFERENCJE REACT DOM 2 - KOMPONENTY"} />
-        <ReactDOMComponents />
+        {/* <Separator title={"## REFERENCJE REACT DOM 2 - KOMPONENTY"} />
+        <ReactDOMComponents /> */}
 
         <Separator title={"## REFERENCJE REACT DOM 3 - API"} />
         <ReactDOMAPI />
