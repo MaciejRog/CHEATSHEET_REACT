@@ -26,6 +26,9 @@ function ReactDOMComponents() {
       <ReactDOMComponentsSelectOption />
       <ReactDOMComponentsProgress />
       <ReactDOMComponentsTextarea />
+
+      {/*  */}
+      <ReactDOMComponentResourceTags />
     </div>
   );
 }
@@ -826,6 +829,29 @@ function ReactDOMComponentResourceTags() {
       ## meta
       VVVVVVVVVVVVVVVVV
       */}
+      {/* 
+      Pozwala dodać metadane.
+      Można wyrenderować gdziekolwiek, a dodany będzie i tak do <head>
+
+      UWAGA!!! musi mieć dokładnie 1 z nastepujących atrybutów  [name, charset, httpEquiv, itemProp]
+      <meta
+        name=""       // określa RODZAJ metadanych
+        charset=""    // JEDYNA wartość to 'utf-8'
+        httpEquiv=""  // określa dyrektywę do procesowania 
+        itemProp=""   // określa metadane dla konkretnego przedmiotu, nie dla całego dokumentu
+                        UWAGA!!! to nie ma specjalnego traktowania <meta> nie jest dodawany do <head>
+                                 bo ten atrybut określa fakt, że metadane dotyczą specyficznej części strony, a nie całego dokumentu
+        //----
+        content=""
+      >
+
+
+        <meta name="author" content="John Smith" />
+        <meta name="keywords" content="React, JavaScript, semantic markup, html" />
+        <meta name="description" content="API reference for the <meta> component in React DOM" />
+
+
+      */}
       <meta
         name="keywords"
         content="React, JavaScript, semantic markup, html"
@@ -834,18 +860,96 @@ function ReactDOMComponentResourceTags() {
       #################
       ## script
       VVVVVVVVVVVVVVVVV
+
+      można dodać w dowolnym miejscu a react umieści je w <head> i będzie dbał o DE-DUPLIKACJI\
+
+      <script>:
+          MUSI MIEĆ:
+            - children
+            LUB
+            - src (url to zewnętrznego pliku)
+
+      <script
+        src=""
+        async="true"              // BOOL - ZALECANE DLA WYDAJNOŚCI | pozwala opóźnić wykonanie skryptu az pozostałe 
+                                    treści strony DOM zostaną przetworzone
+        cressOrigin=""            // 'anonymous', 'use-credentials' rodzaj polityki CORS
+        fetchPriority=""          // 'high', 'low', 'auto' [DOMYŚLNE]  PIORYTET POBRANIA
+        integrity=""              // hash pliku do sprawdzenia jego autentyczności
+        noModule={true}           // BOOL - wyłącznie skryptu w przeglądarkach które wspierają ESMODULES
+        nonce=""                  //
+        referrer=""               // określa jaki nagłówek REFERER wysłać 
+        type=""                   // określa czy skrypt jest KLASYCZNY, ES_MODULE, IMPORT_MAP
+        //------------------
+        onError={() => {} }       // 
+        onLoad={() => {} }        //
+        // ############
+        // ## NIE UZYWAC TYCH NIŻEJ
+        // VVVVVVVVVVVV
+        blocking
+        defer         // stosować async  (blokuje przeglądarkę przed wykonanien skryptu zanim DOM się nie załaduje)
+                                          nie działa przy server-rendered components 
+      >
+        // ...
+      </script>
+
+        skrypt może pozostać w DOM nawet po odmontowaniu komponentu
+
       */}
       <script> alert(`hi!`) </script>
+      <script
+        src="./TEST.js"
+        async={true}
+        onLoad={() => {
+          console.warn(
+            "USTAW TERAZ STAN ABY WYRENDEROWAĆ KOMPONENT KTÓRY POTRZEBUJE TEGO SKRYPTU"
+          );
+        }}
+      ></script>
       {/* 
       #################
       ## style
       VVVVVVVVVVVVVVVVV
+
+      można go wyrenderować w dowolnym miejscu a React doda go w <head> i pozbędzie sę duplikatów
+      działa Suspend gdy skryppt się ładuje (wymaga 'href' i 'precedence')
+
+      <style  
+        precedence=""     // określa gdzue w kolejności innych styli umieścić tego 
+                            (pozwala na zarządzania kaskadowością) 'lower' 'higher'
+        href=""           // react porównuje duplikaty pod względem 'href'
+        media=""          // 
+        nonce=""          // content security policy
+        title=""          // 
+        //################
+        //## NIE STOSOWAĆ
+        //VVVVVVVVVVVVVVVV
+        blocking=""       // 'render'
+      >
+        {
+        }
+      </style>
+
       */}
       <style>{` p { color: red; } `}</style>
       {/* 
       #################
       ## title
       VVVVVVVVVVVVVVVVV
+
+      pozwala zmienić tytuł strony
+      można wyrenderować z dowolnego miejsca w kodzie, a będzie dodany do <head>
+
+      UWAGA!!!
+        <title> w <svg> -> nie ma specialnego zachowania (acc annotation)
+        gdy <title> ma 'itemProp' nie ma specjalnego zachowania, określa metadane określonej częsci strony, a nie całego dokumentu
+        TYLKO RENDEROWAĆ 1 'TITLE' na raz
+
+        UWAGA!! musi byc to pojedyńczy string!!!
+        
+        NIE DZIĄŁA !!!! <title>tytuł to {zmienna}</title>         xxxxxxxxxx
+        TO DZIĄŁA !!!!! <title>{`Tytuł to ${zienne}`}</title>     OK_OK_OK
+
       */}
       <title>My Blog</title>
     </>
